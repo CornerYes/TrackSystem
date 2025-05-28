@@ -45,8 +45,9 @@ do
 			Speed = 0,
 			track_settings = track_settings,
 			variables = {
-				Wheels = {},
-				Points = {},
+				Wheels = {} :: { BasePart },
+				Points = {} :: { vector },
+				MainPart = nil :: BasePart?
 			},
 		}
 		setmetatable(object, trackclass)
@@ -54,14 +55,17 @@ do
 	end
 
 	function trackclass:Init(WheelParts: { BasePart })
-		for _, wheels in ipairs(WheelParts) do
-			local Names = wheels.Name:split("_")
+		for _, wheel in ipairs(WheelParts) do
+			if wheel.Name == "Main" then
+				self.variables.MainPart = wheel
+				continue
+			end
+			local Names = wheel.Name:split("_")
 			local currentindex: number = tonumber(Names[1]) or error("nil")
-			self.variables.Wheels[currentindex] = wheels
+			self.variables.Wheels[currentindex] = wheel
 		end
 
 		for index, wheel in ipairs(self.variables.Wheels) do
-			print("HIIIII")
 			local nextindex = index + 1
 			local nextwheel = self.variables.Wheels[nextindex] or self.variables.Wheels[1]
 			print(wheel, nextwheel)
@@ -76,7 +80,7 @@ do
 			)
 			local size = Vector3.new(0.3,0.3,0.3)
 			local p1 = createpart("test", size, Vector3.new(Pos1.x, Pos1.y, Pos1.z), Color3.new(1,0,0))
-			local p2 = createpart("test", size, Vector3.new(Pos2.x, Pos2.y, Pos2.z), Color3.new(1,0,0))
+			local p2 = createpart("test", size, Vector3.new(Pos2.x, Pos2.y, Pos2.z), Color3.new(0,1,0))
 			wheel.Color = Color3.new(0,1,0)
 			nextwheel.Color = Color3.new(1,0,0)
 			task.wait(1)
