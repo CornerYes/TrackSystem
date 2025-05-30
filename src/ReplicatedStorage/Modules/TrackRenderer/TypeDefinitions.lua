@@ -1,7 +1,6 @@
 
 export type TrackSettings = {
-	TrackModel: string,
-	Trackpath: Instance?,
+	TrackModel: Model?,
 	TrackLength: number,
 }
 

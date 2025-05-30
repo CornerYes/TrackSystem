@@ -15,5 +15,8 @@ end
 print("Tank client script started")
 
 local tracksettings = TrackRenderer.newsettings()
+tracksettings.TrackLength = 0.6
+tracksettings.TrackModel = game.ReplicatedStorage.Tracks.Brick
 local track = TrackRenderer.new(tracksettings, Wheels:GetChildren())
 track:Render()
+track:SetSpeed(5)

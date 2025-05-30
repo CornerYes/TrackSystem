@@ -14,8 +14,7 @@ local function uid()
 end
 function module.newsettings(): TypeDef.TrackSettings
 	return {
-		TrackModel = "",
-		Trackpath = nil,
+		TrackModel = nil,
 		TrackLength = 100,
 	}
 end
@@ -27,6 +26,10 @@ function module.new(track_settings: TypeDef.TrackSettings, Wheels: {BasePart})
 		ID = uid(),
 	}
 	
+	if not track_settings.TrackModel then
+		error("Instance not Defined for TrackModel!")
+	end
+
 	Actor:SendMessage("Init", object.ID, track_settings, Wheels)
 	setmetatable(object, module)
 	return object
