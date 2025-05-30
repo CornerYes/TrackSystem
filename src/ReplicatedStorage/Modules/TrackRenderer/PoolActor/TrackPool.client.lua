@@ -61,7 +61,7 @@ local function createcirculararc(center: vector, point1: vector, point2: vector,
 	return rotatedPoint
 end
 
-local function parametriclinearLerp(t: number, points: {Vector3}): Vector3
+local function piecewiselerp(t: number, points: {Vector3}): Vector3
     local count = #points
     if count < 2 then
         return points[1] or Vector3.zero
@@ -200,8 +200,8 @@ do
 
 			TrackPart = TrackPart:Clone() :: Model
 			TrackPart.Parent = workspace.Terrain
-			local Pos1 = parametriclinearLerp(t1, Points)
-			local Pos2 = parametriclinearLerp(t2, Points)
+			local Pos1 = piecewiselerp(t1, Points)
+			local Pos2 = piecewiselerp(t2, Points)
 			local targetCF = CFrame.lookAt(Pos1, Pos2, self.variables.MainPart.CFrame.UpVector)
 			TrackPart:PivotTo(targetCF)
 
@@ -230,8 +230,8 @@ do
 				local t1 = (tread.t1 + self.variables.offset) % 1
 				local t2 = (tread.t2 + self.variables.offset) % 1
 
-				local Pos1 = parametriclinearLerp(t1, Points)
-				local Pos2 = parametriclinearLerp(t2, Points)
+				local Pos1 = piecewiselerp(t1, Points)
+				local Pos2 = piecewiselerp(t2, Points)
 
 				local targetCF = CFrame.lookAt(Pos1, Pos2, self.variables.MainPart.CFrame.UpVector)
 				temp[tread.trackpart] = targetCF
