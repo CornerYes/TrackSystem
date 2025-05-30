@@ -214,13 +214,18 @@ do
 	end
 
 	function trackclass:update(dt: number)
+		local temp = {}
+		task.desynchronize()
+		debug.profilebegin("UpdateTrack")
 		if self.IsActive then
 			self.variables.offset = self.variables.offset :: number
 			self.Speed = self.Speed :: number
+
 			local speed = (self.Speed * dt) / self.track_settings.TrackLength
 			self.variables.offset = (self.variables.offset + speed) % 1
-			print(self.variables.offset)
+
 			local Points = returnpoints(self.variables.Wheels)
+
 			for segment, tread in ipairs(self.variables.Treads) do
 				local t1 = (tread.t1 + self.variables.offset) % 1
 				local t2 = (tread.t2 + self.variables.offset) % 1
@@ -229,7 +234,15 @@ do
 				local Pos2 = parametriclinearLerp(t2, Points)
 
 				local targetCF = CFrame.lookAt(Pos1, Pos2, self.variables.MainPart.CFrame.UpVector)
-				tread.trackpart:PivotTo(targetCF)
+				temp[tread.trackpart] = targetCF
+			end
+		end
+		debug.profileend()
+		task.synchronize()
+
+		for trackpart, targetCF in pairs(temp) do
+			if trackpart:IsA("Model") then
+				trackpart:PivotTo(targetCF)
 			end
 		end
 	end
