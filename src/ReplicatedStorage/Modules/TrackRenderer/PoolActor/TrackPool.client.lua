@@ -93,42 +93,15 @@ local function vectortovector3(v: vector): Vector3
 	return Vector3.new(v.x, v.y, v.z)
 end
 
-do
-	function trackclass.new(track_settings: TypeDef.TrackSettings)
-		local object = {
-			t = 0,
-			IsActive = false,
-			Speed = 0,
-			track_settings = track_settings,
-			variables = {
-				Wheels = {} :: { BasePart },
-				WheelPoints = {} :: {{ pos: {vector}, pb: BasePart }},
-				MainPart = nil :: BasePart?
-			},
-		}
-		setmetatable(object, trackclass)
-		return object
-	end
-
-	function trackclass:Init(WheelParts: { BasePart })
-		local Points = {}
-
-		for _, wheel in ipairs(WheelParts) do
-			if wheel.Name == "Main" then
-				self.variables.MainPart = wheel
-				continue
-			end
-			local Names = wheel.Name:split("_")
-			local currentindex: number = tonumber(Names[1]) or error("nil")
-			self.variables.Wheels[currentindex] = wheel
-		end
-
-		for index, wheel in ipairs(self.variables.Wheels) do
+local function returnpoints(Wheels: { BasePart }): {Vector3}
+	local Points = {}
+	local WheelPoints = {}
+	for index, wheel in ipairs(Wheels) do
 			local nextindex = index + 1
-			if nextindex > #self.variables.Wheels then
+			if nextindex > #Wheels then
 				nextindex = 1
 			end
-			local nextwheel = self.variables.Wheels[nextindex]
+			local nextwheel = Wheels[nextindex]
 			local Type = wheel.Name:split("_")
 			local rightvector = wheel.CFrame.RightVector
 
@@ -139,22 +112,20 @@ do
 				nextwheel.Size.Z / 2,
 				vector3tovector(rightvector)
 			)
-			if not self.WheelPoints then
-				self.WheelPoints = {}
-			end
-			self.WheelPoints[nextindex] = {}
-			self.WheelPoints[nextindex].pos = {Pos2}
-			self.WheelPoints[nextindex].pb = nextwheel
+
+			WheelPoints[nextindex] = {
+				pb = nextwheel,
+				pos = {Pos2}
+			}
 			if Type[2] then
 				if Type[2] == "curve" then
-					self.WheelPoints[index].pb = wheel
-					table.insert(self.WheelPoints[index].pos, Pos1)
+					WheelPoints[index].pb = wheel
+					table.insert(WheelPoints[index].pos, Pos1)
 				end
 			end
-			
 		end
 
-		for _, PosTable in ipairs(self.WheelPoints) do
+		for _, PosTable in ipairs(WheelPoints) do
 			if #PosTable.pos > 1 then
 					table.insert(Points, vectortovector3(PosTable.pos[1]))
 					local v1 = vector.normalize(PosTable.pos[1] - vector3tovector(PosTable.pb.Position))
@@ -183,13 +154,44 @@ do
 				end
 			end
 		end
-		table.insert(Points, vectortovector3(self.WheelPoints[1].pos[1]))
+	table.insert(Points, vectortovector3(WheelPoints[1].pos[1]))
+	return Points
+end
 
+do
+	function trackclass.new(track_settings: TypeDef.TrackSettings)
+		local object = {
+			IsActive = false,
+			Speed = 0 :: number,
+			track_settings = track_settings,
+			variables = {
+				offset = 0 :: number,
+				Wheels = {} :: { BasePart },
+				Treads = {} :: {trackpart: BasePart, t1: number, t2: number} ,
+				MainPart = nil :: BasePart?
+			},
+		}
+		setmetatable(object, trackclass)
+		return object
+	end
+
+	function trackclass:Init(WheelParts: { BasePart })
+		for _, wheel in ipairs(WheelParts) do
+			if wheel.Name == "Main" then
+				self.variables.MainPart = wheel
+				continue
+			end
+			local Names = wheel.Name:split("_")
+			local currentindex: number = tonumber(Names[1]) or error("nil")
+			self.variables.Wheels[currentindex] = wheel
+		end
+		local Points = returnpoints(self.variables.Wheels)
+		
 		local _, totallength = getotallength(Points)
 		local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
 		for segment = 1, numberofparts do
-			local t1 = (segment - 1) / numberofparts
-			local t2 = segment / numberofparts
+			local t1 = ((segment - 1) / numberofparts + self.variables.offset) % 1
+			local t2 = ((segment / numberofparts) + self.variables.offset) % 1
 
 			local TrackPart = self.track_settings.TrackModel
 			if not TrackPart then
@@ -202,11 +204,34 @@ do
 			local Pos2 = parametriclinearLerp(t2, Points)
 			local targetCF = CFrame.lookAt(Pos1, Pos2, self.variables.MainPart.CFrame.UpVector)
 			TrackPart:PivotTo(targetCF)
+
+			self.variables.Treads[segment] = {
+				trackpart = TrackPart,
+				t1 = t1,
+				t2 = t2
+			}
 		end
 	end
 
-	function trackclass:update(dt)
+	function trackclass:update(dt: number)
+		if self.IsActive then
+			self.variables.offset = self.variables.offset :: number
+			self.Speed = self.Speed :: number
+			local speed = (self.Speed * dt) / self.track_settings.TrackLength
+			self.variables.offset = (self.variables.offset + speed) % 1
+			print(self.variables.offset)
+			local Points = returnpoints(self.variables.Wheels)
+			for segment, tread in ipairs(self.variables.Treads) do
+				local t1 = (tread.t1 + self.variables.offset) % 1
+				local t2 = (tread.t2 + self.variables.offset) % 1
 
+				local Pos1 = parametriclinearLerp(t1, Points)
+				local Pos2 = parametriclinearLerp(t2, Points)
+
+				local targetCF = CFrame.lookAt(Pos1, Pos2, self.variables.MainPart.CFrame.UpVector)
+				tread.trackpart:PivotTo(targetCF)
+			end
+		end
 	end
 
 	function trackclass:destroying()
@@ -218,7 +243,7 @@ Actor:BindToMessage("Init", function(ID, track_settings: TypeDef.TrackSettings, 
 	local track = trackclass.new(track_settings)
 	activetracks[ID] = track
 	track:Init(Wheels)
-end)
+end)  	 	
 
 Actor:BindToMessage("change", function(ID, newdata: { IsActive: boolean, Speed: number })
 	local track = activetracks[ID]
