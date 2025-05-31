@@ -13,11 +13,12 @@ while true do
     end
     task.wait()
 end
+task.wait(1)
 print("Tank client script started")
 
 local tracksettings = TrackRenderer.newsettings()
-tracksettings.TrackLength = 10
-tracksettings.TrackModel = game.ReplicatedStorage.Tracks.Brick
+tracksettings.TrackLength = 1
+tracksettings.TrackModel = game.ReplicatedStorage.Tracks.SimpleTrack
 local track = TrackRenderer.new(tracksettings, Wheels:GetChildren())
 track:Render()
 track:SetSpeed(0.05)
