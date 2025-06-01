@@ -6,6 +6,14 @@ local trackclass = {}
 local activetracks = {}
 trackclass.__index = trackclass
 
+type Point = {
+	number | boolean | {BasePart? | Vector3}?
+}
+
+type PrePoint = {
+	Vector3 | BasePart
+}
+
 local function getexternaltangentpoint(c1pos: vector, radi1: number, c2pos: vector, radi2: number, rv: vector): (vector, vector)
 	local dir = c1pos - c2pos
 	local distance = vector.magnitude(dir)
@@ -57,58 +65,106 @@ local function createcirculararc(center: vector, point1: vector, point2: vector,
 	return rotatedPoint
 end
 
-local function getotallength(points: any): ({any}, number)
-    local legnthtable: {any} = {}
+local function getlength(a: Vector3, b: Vector3): ( Point, number)
+	local len = (b - a).Magnitude
+	local data = {
+		len,
+		false,
+		{a, b}
+	} :: Point
+
+	return data, len
+end
+
+local function getotallength(points: {Vector3 | PrePoint }): ({ Point }, number)
+    local legnthtable = {}
     local totallength = 0
 
     for i = 1, #points - 1 do
 		local currentPoint = points[i]
+		local nextpoint = points[i + 1]
 		if typeof(currentPoint) == "table" then
-			local p1: vector = currentPoint[1]
-			local p2: vector = currentPoint[2]
-			local raidus: number = currentPoint[3]
+			local p1: Vector3 = currentPoint[1] :: Vector3
+			local p2: Vector3 = currentPoint[2] :: Vector3
+			local wheel: BasePart = currentPoint[3] :: BasePart
+			local raidus = wheel.Size.Z / 2
+			local v1 = vector.normalize(vector3tovector(p1) - vector3tovector(wheel.Position))
+			local v2 = vector.normalize(vector3tovector(p2) - vector3tovector(wheel.Position))
 
-			local angle = math.acos(vector.dot(p1, p2))
-			local arcLength = angle * raidus / 2
+			local angle = math.acos(vector.dot(v1, v2))
+			local arcLength = angle * raidus
+			local arcdata = {
+				arcLength,
+				true,
+				{wheel, p1, p2} :: {BasePart | Vector3},
+			} :: Point
 			totallength += arcLength
-			legnthtable[#legnthtable + 1] = {arcLength}
-			legnthtable[#legnthtable + 1][2] = true
-		else
-			if typeof(points[i+1]) == "table" then
-				local len = (points[i+1] - currentPoint).Magnitude
-       	 		legnthtable[#legnthtable + 1] = {len}
-			legnthtable[#legnthtable + 1][2] = false
+			table.insert(legnthtable, arcdata)
+
+			if typeof(nextpoint) == "table" then
+				local data, len = getlength(p2, nextpoint[1] :: Vector3)
+				table.insert(legnthtable, data)
         		totallength += len
 			else
-				
+				local data, len = getlength(p2, nextpoint)
+				table.insert(legnthtable, data)
+        		totallength += len
+			end
+		else
+			if typeof(nextpoint) == "table" then
+				local data, len = getlength(currentPoint, nextpoint[1] :: Vector3)
+				table.insert(legnthtable, data)
+        		totallength += len
+			else
+				local data, len = getlength(currentPoint, nextpoint)
+				table.insert(legnthtable, data)
+        		totallength += len
 			end
 		end
     end
 
-
     return legnthtable, totallength
 end
 
-local function piecewiselerp(t: number, points: {Vector3}): Vector3
+local function piecewiselerp(t: number, points: {Vector3 | PrePoint}): Vector3
     local legnthtable, totallength = getotallength(points)
     local target = t * totallength
 
     local distance = 0
     for i = 1, #legnthtable do
-        local length = legnthtable[i]
+        local length = legnthtable[i][1] :: number
+		local isacurve = legnthtable[i][2] :: boolean
+		local pointdata = legnthtable[i][3] :: {BasePart | Vector3}
         if distance + length >= target then
-            local segmentT = (target - distance) / length
-            return points[i]:Lerp(points[i + 1], segmentT)
+			local segmentT = (target - distance) / length
+			if isacurve then
+				local p1 = pointdata[2] :: Vector3
+				local p2 = pointdata[3] :: Vector3
+				local wheel = pointdata[1] :: BasePart
+				local radius = wheel.Size.Z / 2	
+				local arcPoint = createcirculararc(
+					vector3tovector(wheel.Position),
+					vector3tovector(p1),
+					vector3tovector(p2),
+					radius,
+					vector3tovector(wheel.CFrame.RightVector),
+					segmentT
+				)
+				return vectortovector3(arcPoint)
+			else
+				local p1 = pointdata[1] :: Vector3
+				local p2 = pointdata[2] :: Vector3
+				return p1:Lerp(p2 :: Vector3, segmentT)
+			end
         end
         distance += length
     end
-
-    return points[#points]
+    return points[#points] :: Vector3
 end
 
 
-local function returnpoints(Wheels: { BasePart }): ({Vector3}, Vector3)
-	local Points = {}
+local function returnpoints(Wheels: { BasePart }): ({ Vector3 | PrePoint  }, Vector3)
+	local Points: {Vector3 | PrePoint} = {}
 	local WheelPoints = {}
 	for index, wheel in ipairs(Wheels) do
 		local nextindex = index + 1
@@ -153,51 +209,31 @@ local function returnpoints(Wheels: { BasePart }): ({Vector3}, Vector3)
 	end
 	for _, PosTable in ipairs(WheelPoints) do
 		if #PosTable.pos > 1 then
-			local v1 = vector.normalize(PosTable.pos[1] - vector3tovector(PosTable.pb.Position))
-			local v2 = vector.normalize(PosTable.pos[2] - vector3tovector(PosTable.pb.Position))
-
-			local angle = math.acos(vector.dot(v1, v2))
-			local arcLength = angle * PosTable.pb.Size.Z / 2
-			local totalsegments = math.ceil(arcLength/0.5)
-
-			for segment = 1, totalsegments do 
-				local t = (segment - 1) / totalsegments
-				local arcPoint = createcirculararc(
-					vector3tovector(PosTable.pb.Position),
-					PosTable.pos[1],
-					PosTable.pos[2],
-					PosTable.pb.Size.Z / 2,
-					vector3tovector(PosTable.pb.CFrame.RightVector),
-					t
-				)
-				table.insert(Points, vectortovector3(arcPoint))
-			end
-			table.insert(Points, vectortovector3(PosTable.pos[2]))
+			Points[#Points + 1] = {
+				vectortovector3(PosTable.pos[1]),
+				vectortovector3(PosTable.pos[2]),
+				PosTable.pb,
+			} :: PrePoint
 		else
 			for _, Position in ipairs(PosTable.pos) do
 				table.insert(Points, vectortovector3(Position))
 			end
 		end
 	end
+
 	table.insert(Points,vectortovector3(WheelPoints[1].pos[1]))
 	local center = Vector3.zero
-	for i, point in ipairs(Points) do
-    	center += point
-			local part = createpart(
-			"Point",
-			Vector3.new(0.1, 0.1, 0.1),
-			point,
-			Color3.new(1, 0, 0)
-			)
-			local highlight = Instance.new("Highlight")
-			highlight.Parent = part
-			part.Name = "Point_" .. i
-			part.Parent = workspace.Terrain
-		
-		task.wait(0.1)
+
+	for _, point in ipairs(Points) do
+    	if typeof(point) == "table" then
+			center += point[1] :: Vector3
+			center += point[2] :: Vector3
+		else
+			center += point
+		end
 	end
+
 	center /= #Points
-	print(Points)
 	return Points, center
 end
 
@@ -229,10 +265,8 @@ do
 			self.variables.Wheels[currentindex] = wheel
 		end
 		local Points, center = returnpoints(self.variables.Wheels)
-		
 		local _, totallength = getotallength(Points)
 		local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
-		print(totallength)
 		for segment = 1, numberofparts do
 			local t1 = ((segment - 1) / numberofparts + self.variables.offset) % 1
 			local t2 = ((segment / (numberofparts)) + self.variables.offset) % 1
@@ -265,8 +299,6 @@ do
 				t2 = t2
 			}
 			task.wait(0.1)
-
-
 		end
 	end
 
@@ -335,6 +367,6 @@ end)
 
 game:GetService("RunService").RenderStepped:Connect(function(dt)
 	for _, track in pairs(activetracks) do
-		--track:update(dt)
+		track:update(dt)
 	end
 end)

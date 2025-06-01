@@ -13,7 +13,7 @@ while true do
     end
     task.wait()
 end
-task.wait(1)
+task.wait(0.5)
 print("Tank client script started")
 
 local tracksettings = TrackRenderer.newsettings()
