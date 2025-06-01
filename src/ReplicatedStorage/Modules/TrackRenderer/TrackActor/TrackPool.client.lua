@@ -326,7 +326,7 @@ do
 		task.synchronize()
 
 		for trackpart, targetCF in pairs(temp) do
-			--trackpart:PivotTo(targetCF)
+			trackpart:PivotTo(targetCF)
 		end
 	end
 end
@@ -342,8 +342,8 @@ end)
 
 Actor:BindToMessage("change", function(ID, newdata: { IsActive: boolean, Speed: number })
 	local track = activetracks[ID]
-	if newdata["Speed"] or newdata["IsActive"] then
-		track.Speed = newdata.Speed :: number
+	if track then
+		track.Speed = newdata.Speed 
 		track.IsActive = newdata.IsActive
 	end
 end)
