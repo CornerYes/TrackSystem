@@ -5,8 +5,11 @@ local module = {}
 module.__index = module
 
 local uidcount = 0
-local Actor = script.PoolActor
-Actor.Parent = game.ReplicatedFirst
+
+local Folder = Instance.new("Folder")
+Folder.Name = "TrackRenderer"
+Folder.Parent = game.ReplicatedFirst
+local TemplateActor = script.TrackActor:Clone()
 
 local function uid()
 	uidcount += 1
@@ -24,19 +27,20 @@ function module.new(track_settings: TypeDef.TrackSettings, Wheels: {BasePart})
 		IsActive = false,
 		Speed = 0,
 		ID = uid(),
+		Actor = TemplateActor:Clone(),
 	}
 	
 	if not track_settings.TrackModel then
 		error("Instance not Defined for TrackModel!")
 	end
 
-	Actor:SendMessage("Init", object.ID, track_settings, Wheels)
+	object.Actor:SendMessage("Init", object.ID, track_settings, Wheels)
 	setmetatable(object, module)
 	return object
 end
 
 function module:UpdatePool_PrivateFunction()
-	Actor:SendMessage("change", self.ID, {Speed = self.Speed, IsActive = self.IsActive})
+	self.Actor:SendMessage("change", self.ID, {Speed = self.Speed, IsActive = self.IsActive})
 end
 
 function module:SetSpeed(number)
@@ -55,7 +59,7 @@ function module:StopRendering()
 end
 
 function module:Destroy()
-	Actor:SendMessage("destroying", self.ID)
+	self.Actor:SendMessage("destroying", self.ID)
 end
 
 return module

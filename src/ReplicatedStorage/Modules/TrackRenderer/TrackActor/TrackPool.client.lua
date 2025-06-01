@@ -1,7 +1,6 @@
 --!strict
 local TypeDef = require(game.ReplicatedStorage.Modules.TrackRenderer.TypeDefinitions)
 local Actor = script.Parent
-local dx = 0.01
 local trackclass = {}
 local activetracks = {}
 trackclass.__index = trackclass
@@ -235,6 +234,7 @@ do
 			IsActive = false,
 			Speed = 0 :: number,
 			track_settings = track_settings,
+			Event = nil :: RBXScriptConnection?,
 			variables = {
 				offset = 0 :: number,
 				Wheels = {} :: { BasePart },
@@ -322,15 +322,12 @@ do
 				temp[tread.trackpart] = targetCF
 			end
 		end
+		debug.profileend()
 		task.synchronize()
 
 		for trackpart, targetCF in pairs(temp) do
-			trackpart:PivotTo(targetCF)
+			--trackpart:PivotTo(targetCF)
 		end
-	end
-
-	function trackclass:destroying()
-		
 	end
 end
 
@@ -338,6 +335,9 @@ Actor:BindToMessage("Init", function(ID, track_settings: TypeDef.TrackSettings, 
 	local track = trackclass.new(track_settings)
 	activetracks[ID] = track
 	track:Init(Wheels)
+	track.Event = game:GetService("RunService").RenderStepped:ConnectParallel(function(dt)
+		track:update(dt)
+	end)
 end)  	 	
 
 Actor:BindToMessage("change", function(ID, newdata: { IsActive: boolean, Speed: number })
@@ -349,18 +349,16 @@ end)
 Actor:BindToMessage("destroying", function(ID) 
 	local track = activetracks[ID]
 	if track then
-		track:destroying()
+		if track.Event then
+			track.Event:Disconnect()
+			track.Event = nil
+		end
 		activetracks[ID] = nil
 		for _, v in pairs(track.variables.Treads) do
 			if v.trackpart then
 				v.trackpart:Destroy()
 			end
 		end
-	end
-end)
-
-game:GetService("RunService").RenderStepped:Connect(function(dt)
-	for _, track in pairs(activetracks) do
-		track:update(dt)
+		script.Parent:Destroy()
 	end
 end)
