@@ -126,8 +126,7 @@ local function getotallength(points: {Vector3 | PrePoint }): ({ Point }, number)
     return legnthtable, totallength
 end
 
-local function piecewiselerp(t: number, points: {Vector3 | PrePoint}): Vector3
-    local legnthtable, totallength = getotallength(points)
+local function piecewiselerp(t: number, points: {Vector3 | PrePoint}, legnthtable : {Point}, totallength: number): Vector3
     local target = t * totallength
 
     local distance = 0
@@ -258,7 +257,7 @@ do
 			self.variables.Wheels[currentindex] = wheel
 		end
 		local Points, center = returnpoints(self.variables.Wheels)
-		local _, totallength = getotallength(Points)
+		local lengthtable, totallength = getotallength(Points)
 		local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
 		for segment = 1, numberofparts do
 			local t1 = ((segment - 1) / numberofparts + self.variables.offset) % 1
@@ -268,8 +267,9 @@ do
 			TrackPart = TrackPart:Clone() :: Model
 			TrackPart.Parent = workspace.Terrain
 			TrackPart.Name = "TrackPart_" .. segment
-			local Pos1 = piecewiselerp(t1, Points)
-			local Pos2 = piecewiselerp(t2, Points)
+
+			local Pos1 = piecewiselerp(t1, Points, lengthtable, totallength)
+			local Pos2 = piecewiselerp(t2, Points, lengthtable, totallength)
 
 			local midpoint = (Pos1 + Pos2) / 2
 
@@ -302,13 +302,13 @@ do
 			self.variables.offset = (self.variables.offset + speed) % 1
 
 			local Points, center = returnpoints(self.variables.Wheels)
-
+			local lengthtable, totallength = getotallength(Points)
 			for _, tread: {trackpart: BasePart, t1: number, t2: number} in ipairs(self.variables.Treads :: {{trackpart: BasePart, t1: number, t2: number}}) do
 				local t1 = (tread.t1 + self.variables.offset) % 1
 				local t2 = (tread.t2 + self.variables.offset) % 1
 
-				local Pos1 = piecewiselerp(t1, Points)
-				local Pos2 = piecewiselerp(t2, Points)
+				local Pos1 = piecewiselerp(t1, Points, lengthtable, totallength)
+				local Pos2 = piecewiselerp(t2, Points, lengthtable, totallength)
 				local midpoint = (Pos1 + Pos2) / 2
 				local direction = (Pos2 - Pos1).Unit
 				local outward = (Pos1 - center).Unit
