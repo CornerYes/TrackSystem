@@ -342,8 +342,10 @@ end)
 
 Actor:BindToMessage("change", function(ID, newdata: { IsActive: boolean, Speed: number })
 	local track = activetracks[ID]
-	track.Speed = newdata.Speed
-	track.IsActive = newdata.IsActive
+	if newdata["Speed"] or newdata["IsActive"] then
+		track.Speed = newdata.Speed :: number
+		track.IsActive = newdata.IsActive
+	end
 end)
 
 Actor:BindToMessage("destroying", function(ID) 
@@ -359,6 +361,8 @@ Actor:BindToMessage("destroying", function(ID)
 				v.trackpart:Destroy()
 			end
 		end
-		script.Parent:Destroy()
+		if track.track_settings.SeperateActor then
+			script.Parent:Destroy()
+		end
 	end
 end)
