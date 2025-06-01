@@ -1,7 +1,7 @@
 --!strict
 local TypeDef = require(game.ReplicatedStorage.Modules.TrackRenderer.TypeDefinitions)
 local Actor = script.Parent
-local dx = 0.0001
+local dx = 0.01
 local trackclass = {}
 local activetracks = {}
 trackclass.__index = trackclass
@@ -186,7 +186,6 @@ local function returnpoints(Wheels: { BasePart }): ({ Vector3 | PrePoint  }, Vec
 		if WheelPoints[nextindex] then
 			WheelPoints[nextindex].pos[2] = WheelPoints[nextindex].pos[1]
 			WheelPoints[nextindex].pos[1] = Pos2
-			--table.insert(WheelPoints[nextindex].pos, Pos2)
 		else
 			WheelPoints[nextindex] = {
 			pb = nextwheel,
@@ -207,6 +206,7 @@ local function returnpoints(Wheels: { BasePart }): ({ Vector3 | PrePoint  }, Vec
 			end
 		end
 	end
+	local center = Vector3.zero
 	for _, PosTable in ipairs(WheelPoints) do
 		if #PosTable.pos > 1 then
 			Points[#Points + 1] = {
@@ -214,24 +214,17 @@ local function returnpoints(Wheels: { BasePart }): ({ Vector3 | PrePoint  }, Vec
 				vectortovector3(PosTable.pos[2]),
 				PosTable.pb,
 			} :: PrePoint
+			center += vectortovector3(PosTable.pos[1])
 		else
 			for _, Position in ipairs(PosTable.pos) do
+				center += vectortovector3(Position)
 				table.insert(Points, vectortovector3(Position))
 			end
 		end
 	end
 
 	table.insert(Points,vectortovector3(WheelPoints[1].pos[1]))
-	local center = Vector3.zero
-
-	for _, point in ipairs(Points) do
-    	if typeof(point) == "table" then
-			center += point[1] :: Vector3
-			center += point[2] :: Vector3
-		else
-			center += point
-		end
-	end
+	center += vectortovector3(WheelPoints[1].pos[1])
 
 	center /= #Points
 	return Points, center
@@ -272,16 +265,13 @@ do
 			local t2 = ((segment / (numberofparts)) + self.variables.offset) % 1
 
 			local TrackPart = self.track_settings.TrackModel
-			if not TrackPart then
-				return
-			end
-
 			TrackPart = TrackPart:Clone() :: Model
 			TrackPart.Parent = workspace.Terrain
 			TrackPart.Name = "TrackPart_" .. segment
 			local Pos1 = piecewiselerp(t1, Points)
 			local Pos2 = piecewiselerp(t2, Points)
-			local lookatdirection = piecewiselerp(t1 + dx, Points)
+
+			local midpoint = (Pos1 + Pos2) / 2
 
 			local direction = (Pos2 - Pos1).Unit
 			local outward = (Pos1 - center).Unit
@@ -289,7 +279,7 @@ do
 			if math.abs(direction:Dot(outward)) > 0.99 then
     			outward = direction:Cross(Vector3.new(0, 1, 0)).Unit
 			end
-			local targetCF = CFrame.lookAt(Pos1, lookatdirection, outward * -1)
+			local targetCF = CFrame.lookAt(midpoint, Pos2, outward * -1)
 
 			TrackPart:PivotTo(targetCF)
 
@@ -298,7 +288,6 @@ do
 				t1 = t1,
 				t2 = t2
 			}
-			task.wait(0.1)
 		end
 	end
 
@@ -320,15 +309,15 @@ do
 
 				local Pos1 = piecewiselerp(t1, Points)
 				local Pos2 = piecewiselerp(t2, Points)
-				local lookatdirection = piecewiselerp(t1 + dx, Points)
-
+				local midpoint = (Pos1 + Pos2) / 2
 				local direction = (Pos2 - Pos1).Unit
 				local outward = (Pos1 - center).Unit
 
 				if math.abs(direction:Dot(outward)) > 0.99 then
     				outward = direction:Cross(Vector3.new(0, 1, 0)).Unit
 				end
-				local targetCF = CFrame.lookAt(Pos1, lookatdirection, outward * -1)
+
+				local targetCF = CFrame.lookAt(midpoint, Pos2, outward * -1)
 
 				temp[tread.trackpart] = targetCF
 			end
@@ -362,6 +351,11 @@ Actor:BindToMessage("destroying", function(ID)
 	if track then
 		track:destroying()
 		activetracks[ID] = nil
+		for _, v in pairs(track.variables.Treads) do
+			if v.trackpart then
+				v.trackpart:Destroy()
+			end
+		end
 	end
 end)
 
