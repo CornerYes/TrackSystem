@@ -301,41 +301,44 @@ do
 		if self.IsActive then
 			local CameraPosition = Camera.CFrame.Position
 			local distance = (CameraPosition - self.variables.MainPart.Position).Magnitude
+			if distance > self.LODDistance then
+				print("LOD true")
+			end
 
-			self.variables.offset = self.variables.offset :: number
-			self.Speed = self.Speed :: number
-
-			local speed = (self.Speed * dt) / self.track_settings.TrackLength
-			self.variables.offset = (self.variables.offset + speed) % 1
+			local speed = (self.Speed :: number * dt) / self.track_settings.TrackLength
+			self.variables.offset = (self.variables.offset :: number + speed :: number) % 1
 
 			local Points, center = returnpoints(self.variables.Wheels)
 			local lengthtable, totallength = getotallength(Points)
 			local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
 			print(numberofparts, #self.variables.Treads)
-			for _, tread: {trackpart: BasePart, t1: number, t2: number} in ipairs(self.variables.Treads :: {{trackpart: BasePart, t1: number, t2: number}}) do
-				local t1 = (tread.t1 + self.variables.offset) % 1
-				local t2 = (tread.t2 + self.variables.offset) % 1
+			for segment = 1, numberofparts do
+				local tread: {trackpart: BasePart, t1: number, t2: number} = self.variables.Treads[segment]
+				if tread then
+					local t1 = ( ( (segment - 1) / numberofparts) + self.variables.offset) % 1
+					local t2 = ( (segment / numberofparts) + self.variables.offset) % 1
 
-				local Pos1 = piecewiselerp(t1, Points, lengthtable, totallength)
-				local Pos2 = piecewiselerp(t2, Points, lengthtable, totallength)
-				local midpoint = (Pos1 + Pos2) / 2
-				local direction = (Pos2 - Pos1).Unit
-				local outward = (Pos1 - center).Unit
+					local Pos1 = piecewiselerp(t1, Points, lengthtable, totallength)
+					local Pos2 = piecewiselerp(t2, Points, lengthtable, totallength)
+					local midpoint = (Pos1 + Pos2) / 2
+					local direction = (Pos2 - Pos1).Unit
+					local outward = (Pos1 - center).Unit
 
-				if math.abs(direction:Dot(outward)) > 0.99 then
-    				outward = direction:Cross(Vector3.new(0, 1, 0)).Unit
+					if math.abs(direction:Dot(outward)) > 0.99 then
+    					outward = direction:Cross(Vector3.new(0, 1, 0)).Unit
+					end
+
+					local targetCF = CFrame.lookAt(midpoint, Pos2, outward * -1)
+
+					temp[tread.trackpart] = targetCF
 				end
-
-				local targetCF = CFrame.lookAt(midpoint, Pos2, outward * -1)
-
-				temp[tread.trackpart] = targetCF
 			end
 		end
 		debug.profileend()
 		task.synchronize()
 
 		for value, data in pairs(temp) do
-			if typeof(data) == "CFrame" and value:IsA("BasePart") then
+			if typeof(data) == "CFrame" then
 				value:PivotTo(data)
 			end
 		end
@@ -355,6 +358,7 @@ end)
 Actor:BindToMessage("change", function(ID, newdata: { IsActive: boolean?, Speed: number?, LODDistance: number? })
 	local track = activetracks[ID]
 	if track then
+		print(newdata)
 		track.Speed = newdata.Speed or track.Speed
 		track.IsActive = newdata.IsActive or track.IsActive
 		track.LODDistance = newdata.LODDistance or track.LODDistance

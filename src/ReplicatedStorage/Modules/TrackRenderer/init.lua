@@ -43,7 +43,9 @@ function module.new(track_settings: TypeDef.TrackSettings, Wheels: {BasePart})
 	}
 
 	task.spawn(function()
-		if track_settings.SeperateActor then task.wait() end
+		if track_settings.SeperateActor then
+			 task.wait()
+		end
 		object.trackActor:SendMessage("Init", object.ID, track_settings, Wheels)
 	end)
 
@@ -52,6 +54,7 @@ function module.new(track_settings: TypeDef.TrackSettings, Wheels: {BasePart})
 end
 
 function module:UpdatePool_PrivateFunction(data)
+	print(data)
 	self.trackActor:SendMessage("change", self.ID, data)
 end
 
