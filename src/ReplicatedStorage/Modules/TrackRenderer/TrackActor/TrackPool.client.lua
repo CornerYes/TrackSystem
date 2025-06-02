@@ -1,6 +1,7 @@
 --!strict
 local TypeDef = require(game.ReplicatedStorage.Modules.TrackRenderer.TypeDefinitions)
 local Actor = script.Parent
+local Camera = game.Workspace.CurrentCamera
 local trackclass = {}
 local activetracks = {}
 trackclass.__index = trackclass
@@ -233,13 +234,16 @@ do
 		local object = {
 			IsActive = false,
 			Speed = 0 :: number,
+			LODDistance = 100,
 			track_settings = track_settings,
 			Event = nil :: RBXScriptConnection?,
 			variables = {
 				offset = 0 :: number,
 				Wheels = {} :: { BasePart },
 				Treads = {} :: {trackpart: BasePart, t1: number, t2: number} ,
-				MainPart = nil :: BasePart?
+				MainPart = nil :: BasePart?,
+				LODParts = {} :: { BasePart },
+				LodActivated = false :: boolean,
 			},
 		}
 		setmetatable(object, trackclass)
@@ -295,6 +299,9 @@ do
 		local temp = {}
 		debug.profilebegin("UpdateTrack")
 		if self.IsActive then
+			local CameraPosition = Camera.CFrame.Position
+			local distance = (CameraPosition - self.variables.MainPart.Position).Magnitude
+
 			self.variables.offset = self.variables.offset :: number
 			self.Speed = self.Speed :: number
 
@@ -303,6 +310,8 @@ do
 
 			local Points, center = returnpoints(self.variables.Wheels)
 			local lengthtable, totallength = getotallength(Points)
+			local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
+			print(numberofparts, #self.variables.Treads)
 			for _, tread: {trackpart: BasePart, t1: number, t2: number} in ipairs(self.variables.Treads :: {{trackpart: BasePart, t1: number, t2: number}}) do
 				local t1 = (tread.t1 + self.variables.offset) % 1
 				local t2 = (tread.t2 + self.variables.offset) % 1
@@ -325,9 +334,12 @@ do
 		debug.profileend()
 		task.synchronize()
 
-		for trackpart, targetCF in pairs(temp) do
-			trackpart:PivotTo(targetCF)
+		for value, data in pairs(temp) do
+			if typeof(data) == "CFrame" and value:IsA("BasePart") then
+				value:PivotTo(data)
+			end
 		end
+
 	end
 end
 
@@ -340,11 +352,12 @@ Actor:BindToMessage("Init", function(ID, track_settings: TypeDef.TrackSettings, 
 	end)
 end)  	 	
 
-Actor:BindToMessage("change", function(ID, newdata: { IsActive: boolean, Speed: number })
+Actor:BindToMessage("change", function(ID, newdata: { IsActive: boolean?, Speed: number?, LODDistance: number? })
 	local track = activetracks[ID]
 	if track then
-		track.Speed = newdata.Speed 
-		track.IsActive = newdata.IsActive
+		track.Speed = newdata.Speed or track.Speed
+		track.IsActive = newdata.IsActive or track.IsActive
+		track.LODDistance = newdata.LODDistance or track.LODDistance
 	end
 end)
 

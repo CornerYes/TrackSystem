@@ -7,13 +7,14 @@ print("Tank client script started")
 
 local tracks = {}
 
-for i, v: Model in ipairs(workspace.Thing:GetChildren()) do
+for _, v: Model in ipairs(workspace.Thing:GetChildren()) do
     if v:IsA("Model") then
         local tracksettings = TrackRenderer.newsettings()
         tracksettings.TrackLength = 1
         tracksettings.TrackModel = game.ReplicatedStorage.Tracks.SimpleTrack
         tracksettings.SeperateActor = false
         local track = TrackRenderer.new(tracksettings, v:GetChildren())
+        
         track:Render()
         track:SetSpeed(0.05)
         table.insert(tracks, track)
@@ -31,6 +32,18 @@ local client_commands = {
                 end
             end
         end
+    end,
+
+    ["/render"] = function()
+       for _, v in ipairs(tracks) do
+            v:Render()
+       end
+    end,
+
+    ["/stoprending"] = function()
+       for _, v in ipairs(tracks) do
+            v:StopRendering()
+       end
     end,
 }
 

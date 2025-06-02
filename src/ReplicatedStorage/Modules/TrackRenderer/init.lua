@@ -37,12 +37,13 @@ function module.new(track_settings: TypeDef.TrackSettings, Wheels: {BasePart})
 	local object = {
 		IsActive = false,
 		Speed = 0,
+		LODDistance = 100,
 		ID = uid(),
 		trackActor = actortouse,
 	}
-	actortouse.Name = "Track"
+
 	task.spawn(function()
-		task.wait()
+		if track_settings.SeperateActor then task.wait() end
 		object.trackActor:SendMessage("Init", object.ID, track_settings, Wheels)
 	end)
 
@@ -50,29 +51,32 @@ function module.new(track_settings: TypeDef.TrackSettings, Wheels: {BasePart})
 	return object
 end
 
-function module:UpdatePool_PrivateFunction()
-	self.trackActor:SendMessage("change", self.ID, {Speed = self.Speed, IsActive = self.IsActive})
+function module:UpdatePool_PrivateFunction(data)
+	self.trackActor:SendMessage("change", self.ID, data)
 end
 
 function module:SetSpeed(number)
 	self.Speed = number
-	self:UpdatePool_PrivateFunction()
+	self:UpdatePool_PrivateFunction({Speed = number})
+end
+
+function module:SetLODDistance(number)
+	self.LODDistance = number
+	self:UpdatePool_PrivateFunction({LODDistance = number})
 end
 
 function module:Render()
 	self.IsActive = true
-	self:UpdatePool_PrivateFunction()
+	self:UpdatePool_PrivateFunction({IsActive = true})
 end
 
 function module:StopRendering()
 	self.IsActive = false
-	self:UpdatePool_PrivateFunction()
+	self:UpdatePool_PrivateFunction({IsActive = false})
 end
 
 function module:Destroy()
 	self.trackActor:SendMessage("destroying", self.ID)
 end
-
-
 
 return module
