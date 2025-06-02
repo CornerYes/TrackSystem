@@ -240,7 +240,7 @@ do
 			variables = {
 				offset = 0 :: number,
 				Wheels = {} :: { BasePart },
-				Treads = {} :: {trackpart: BasePart, t1: number, t2: number} ,
+				Treads = {} :: {trackpart: BasePart} ,
 				MainPart = nil :: BasePart?,
 				LODParts = {} :: { BasePart },
 				LodActivated = false :: boolean,
@@ -289,8 +289,6 @@ do
 
 			self.variables.Treads[segment] = {
 				trackpart = TrackPart,
-				t1 = t1,
-				t2 = t2
 			}
 		end
 	end
@@ -313,24 +311,28 @@ do
 			local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
 			print(numberofparts, #self.variables.Treads)
 			for segment = 1, numberofparts do
-				local tread: {trackpart: BasePart, t1: number, t2: number} = self.variables.Treads[segment]
+				local tread: {trackpart: BasePart} = self.variables.Treads[segment]
 				if tread then
-					local t1 = ( ( (segment - 1) / numberofparts) + self.variables.offset) % 1
-					local t2 = ( (segment / numberofparts) + self.variables.offset) % 1
+					if segment > #self.variables.Treads then
+						local t1 = ( ( (segment - 1) / numberofparts) + self.variables.offset) % 1
+						local t2 = ( (segment / numberofparts) + self.variables.offset) % 1
 
-					local Pos1 = piecewiselerp(t1, Points, lengthtable, totallength)
-					local Pos2 = piecewiselerp(t2, Points, lengthtable, totallength)
-					local midpoint = (Pos1 + Pos2) / 2
-					local direction = (Pos2 - Pos1).Unit
-					local outward = (Pos1 - center).Unit
+						local Pos1 = piecewiselerp(t1, Points, lengthtable, totallength)
+						local Pos2 = piecewiselerp(t2, Points, lengthtable, totallength)
+						local midpoint = (Pos1 + Pos2) / 2
+						local direction = (Pos2 - Pos1).Unit
+						local outward = (Pos1 - center).Unit
 
-					if math.abs(direction:Dot(outward)) > 0.99 then
-    					outward = direction:Cross(Vector3.new(0, 1, 0)).Unit
+						if math.abs(direction:Dot(outward)) > 0.99 then
+    						outward = direction:Cross(Vector3.new(0, 1, 0)).Unit
+						end
+
+						local targetCF = CFrame.lookAt(midpoint, Pos2, outward * -1)
+
+						temp[tread.trackpart] = targetCF
 					end
+				else
 
-					local targetCF = CFrame.lookAt(midpoint, Pos2, outward * -1)
-
-					temp[tread.trackpart] = targetCF
 				end
 			end
 		end
