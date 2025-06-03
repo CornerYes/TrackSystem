@@ -54,7 +54,6 @@ function module.new(track_settings: TypeDef.TrackSettings, Wheels: {Instance})
 end
 
 function module:UpdatePool_PrivateFunction(data)
-	print(data)
 	self.trackActor:SendMessage("change", self.ID, data)
 end
 

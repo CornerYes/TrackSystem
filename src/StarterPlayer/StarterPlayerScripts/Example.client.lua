@@ -40,9 +40,10 @@ local client_commands = {
        end
     end,
 
-    ["/stoprending"] = function()
+    ["/stoprendering"] = function()
        for _, v in ipairs(tracks) do
             v:StopRendering()
+            print("stop?")
        end
     end,
 }

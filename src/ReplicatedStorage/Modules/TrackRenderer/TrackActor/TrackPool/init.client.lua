@@ -153,11 +153,11 @@ do
 	function trackclass:update(dt: number)
 		local temp: any = {}
 		debug.profilebegin("UpdateTrack")
-		if self.IsActive then
+		if self.IsActive == true then
 			local CameraPosition = Camera.CFrame.Position
 			local distance = (CameraPosition - self.variables.MainPart.Position).Magnitude
 			if distance > self.LODDistance then
-				print("LOD true")
+				
 			end
 			local speed = (self.Speed :: number * dt) / self.variables.ActualDistanceBetweenTreads
 			self.variables.offset = (self.variables.offset :: number + speed :: number) % 1
@@ -216,8 +216,8 @@ do
 					TrackPart:PivotTo(CF)
 					local treadlist = self.variables.Treads :: {{trackpart: Instance | BasePart | Model | string}}
 					treadlist[segment].trackpart = TrackPart
-					print("new part")
 				end
+				
 			elseif data == "destroy" then
 				value:Destroy()
 			end
@@ -237,10 +237,44 @@ end)
 Actor:BindToMessage("change", function(ID, newdata: { IsActive: boolean?, Speed: number?, LODDistance: number? })
 	local track = activetracks[ID]
 	if track then
-		print(newdata)
-		track.Speed = newdata.Speed or track.Speed
-		track.IsActive = newdata.IsActive or track.IsActive
-		track.LODDistance = newdata.LODDistance or track.LODDistance
+
+		for name, value in pairs(newdata) do
+			if track[name] ~= nil then
+				track[name] = value
+			end
+		end
+
+		if track.IsActive == true then
+			for _, tread in ipairs(track.variables.Treads) do
+				local trackpart = tread.trackpart :: Model | BasePart
+				if typeof(trackpart) ~= "string" then
+					if trackpart:IsA("Model") then
+						for _, parts in ipairs(trackpart:GetDescendants()) do
+							if parts:IsA("BasePart") then
+								parts.Transparency = 0
+							end
+						end
+					else
+						trackpart.Transparency = 0
+					end
+				end
+			end
+		else
+			for _, tread in ipairs(track.variables.Treads) do
+				local trackpart = tread.trackpart :: Model | BasePart
+				if typeof(trackpart) ~= "string" then
+					if trackpart:IsA("Model") then
+						for _, parts in ipairs(trackpart:GetDescendants()) do
+							if parts:IsA("BasePart") then
+								parts.Transparency = 1
+							end
+						end
+					else
+						trackpart.Transparency = 1
+					end
+				end
+			end
+		end
 	end
 end)
 
