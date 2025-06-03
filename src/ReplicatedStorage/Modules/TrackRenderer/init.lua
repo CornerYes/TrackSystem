@@ -26,7 +26,7 @@ function module.newsettings(): TypeDef.TrackSettings
 	}
 end
 
-function module.new(track_settings: TypeDef.TrackSettings, Wheels: {BasePart})
+function module.new(track_settings: TypeDef.TrackSettings, Wheels: {Instance})
 	local actortouse = Actor
 
 	if track_settings.SeperateActor then

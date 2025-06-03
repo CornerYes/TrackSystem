@@ -1,6 +1,6 @@
 --Testing script for the tank track renderer
 local TrackRenderer = require(game.ReplicatedStorage.Modules.TrackRenderer)
-task.wait(2)
+task.wait(3)
 print("Tank client script started")
 
 
