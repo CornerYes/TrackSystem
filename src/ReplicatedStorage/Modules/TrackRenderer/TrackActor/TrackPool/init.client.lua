@@ -90,6 +90,7 @@ do
 		local object = {
 			IsActive = false,
 			Speed = 0 :: number,
+			Sagging = 0 :: number,
 			LODDistance = 100,
 			track_settings = track_settings,
 			Event = nil :: RBXScriptConnection?,
@@ -109,13 +110,15 @@ do
 
 	function trackclass:Init(WheelParts: { BasePart })
 		for _, wheel in ipairs(WheelParts) do
-			if wheel.Name == "Main" then
-				self.variables.MainPart = wheel
-				continue
+			if wheel:IsA("BasePart") then
+				if wheel.Name == "Main" then
+					self.variables.MainPart = wheel
+					continue
+				end
+				local Names = wheel.Name:split("_")
+				local currentindex: number = tonumber(Names[1]) or error("nil")
+				self.variables.Wheels[currentindex] = wheel
 			end
-			local Names = wheel.Name:split("_")
-			local currentindex: number = tonumber(Names[1]) or error("nil")
-			self.variables.Wheels[currentindex] = wheel
 		end
 		local Points, center = returnpoints(self.variables.Wheels)
 		local lengthtable, totallength = Common.getotallength(Points)
@@ -156,9 +159,11 @@ do
 		if self.IsActive == true then
 			local CameraPosition = Camera.CFrame.Position
 			local distance = (CameraPosition - self.variables.MainPart.Position).Magnitude
+
 			if distance > self.LODDistance then
 				
 			end
+
 			local speed = (self.Speed :: number * dt) / self.variables.ActualDistanceBetweenTreads
 			self.variables.offset = (self.variables.offset :: number + speed :: number) % 1
 
@@ -234,7 +239,7 @@ Actor:BindToMessage("Init", function(ID, track_settings: TypeDef.TrackSettings, 
 	end)
 end)  	 	
 
-Actor:BindToMessage("change", function(ID, newdata: { IsActive: boolean?, Speed: number?, LODDistance: number? })
+Actor:BindToMessage("change", function(ID, newdata: { IsActive: boolean?, Speed: number?, LODDistance: number?, Sagging: number? })
 	local track = activetracks[ID]
 	if track then
 
