@@ -59,12 +59,12 @@ function module.createcirculararc(center: vector, point1: vector, point2: vector
 	return rotatedPoint
 end
 
-function getlength(a: Vector3, b: Vector3): ( Point, number)
+function getlength(a: Vector3, b: Vector3, c: BasePart): ( Point, number)
 	local len = (b - a).Magnitude
 	local data = {
 		len,
 		false,
-		{a, b}
+		{a, b, c}
 	} :: Point
 
 	return data, len
@@ -77,7 +77,7 @@ function module.getotallength(points: {Vector3 | PrePoint }): ({ Point }, number
     for i = 1, #points - 1 do
 		local currentPoint = points[i]
 		local nextpoint = points[i + 1]
-		if typeof(currentPoint) == "table" then
+		if #currentPoint > 2 then
 			local p1: Vector3 = currentPoint[1] :: Vector3
 			local p2: Vector3 = currentPoint[2] :: Vector3
 			local wheel: BasePart = currentPoint[3] :: BasePart
@@ -95,22 +95,22 @@ function module.getotallength(points: {Vector3 | PrePoint }): ({ Point }, number
 			totallength += arcLength
 			table.insert(legnthtable, arcdata)
 
-			if typeof(nextpoint) == "table" then
-				local data, len = getlength(p2, nextpoint[1] :: Vector3)
+			if #nextpoint > 2 then
+				local data, len = getlength(p2, nextpoint[1] :: Vector3, nextpoint[3])
 				table.insert(legnthtable, data)
         		totallength += len
 			else
-				local data, len = getlength(p2, nextpoint)
+				local data, len = getlength(p2, nextpoint[1], nextpoint[2])
 				table.insert(legnthtable, data)
         		totallength += len
 			end
 		else
-			if typeof(nextpoint) == "table" then
-				local data, len = getlength(currentPoint, nextpoint[1] :: Vector3)
+			if #nextpoint > 2 then
+				local data, len = getlength(currentPoint[1], nextpoint[1] :: Vector3, nextpoint[3])
 				table.insert(legnthtable, data)
         		totallength += len
 			else
-				local data, len = getlength(currentPoint, nextpoint)
+				local data, len = getlength(currentPoint[1], nextpoint[1], nextpoint[2])
 				table.insert(legnthtable, data)
         		totallength += len
 			end
@@ -120,7 +120,7 @@ function module.getotallength(points: {Vector3 | PrePoint }): ({ Point }, number
     return legnthtable, totallength
 end
 
-function module.piecewiselerp(t: number, points: {Vector3 | PrePoint}, legnthtable : {Point}, totallength: number): Vector3
+function module.piecewiselerp(t: number, points: {Vector3 | PrePoint}, legnthtable : {Point}, totallength: number): (Vector3, Vector3)
     local target = t * totallength
 
     local distance = 0
@@ -143,16 +143,17 @@ function module.piecewiselerp(t: number, points: {Vector3 | PrePoint}, legnthtab
 					module.vector3tovector(wheel.CFrame.RightVector),
 					segmentT
 				)
-				return module.vectortovector3(arcPoint)
+				return module.vectortovector3(arcPoint), wheel.CFrame.RightVector
 			else
 				local p1 = pointdata[1] :: Vector3
 				local p2 = pointdata[2] :: Vector3
-				return p1:Lerp(p2 :: Vector3, segmentT)
+				local wheel = pointdata[3] :: BasePart
+				return p1:Lerp(p2 :: Vector3, segmentT), wheel.CFrame.RightVector
 			end
         end
         distance += length
     end
-    return points[#points] :: Vector3
+    return points[#points] :: Vector3, Vector3.zero
 end
 
 return module
