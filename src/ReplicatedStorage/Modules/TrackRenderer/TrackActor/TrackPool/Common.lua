@@ -25,16 +25,19 @@ function module.getexternaltangentpoint(c1pos: vector, radi1: number, c2pos: vec
 	return t1, t2
 end
 
-function module.createpart(name: string, size: Vector3, position: Vector3, color: Color3): BasePart
-	local part = Instance.new("Part")
-	part.Name = name
-	part.Size = size
-	part.Position = position
-	part.Color = color
-	part.Anchored = true
-	part.CanCollide = false
-	part.Parent = workspace
-	return part
+--mainly used for debugging
+function module.createadornment(name: string, raidus: number, CF: CFrame, color: Color3): BasePart
+	local SphereAdornment = Instance.new("SphereHandleAdornment")
+	SphereAdornment.Name = name
+	SphereAdornment.Radius = raidus
+	SphereAdornment.Adornee = workspace.Terrain
+	SphereAdornment.Parent = workspace.Terrain
+	SphereAdornment.CFrame = CF
+	SphereAdornment.Color3 = color
+	SphereAdornment.ZIndex = 1
+	SphereAdornment.Transparency = 0.5
+	SphereAdornment.AlwaysOnTop = true
+	return SphereAdornment
 end
 
 function module.vector3tovector(v: Vector3): vector
