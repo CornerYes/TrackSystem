@@ -131,6 +131,13 @@ do
 			TrackPart = TrackPart:Clone() :: Model
 			TrackPart.Parent = workspace.Terrain
 			TrackPart.Name = "trackpart_"..tostring(segment)
+			
+			for _, v in ipairs(TrackPart:GetDescendants()) do
+				if v:IsA("BasePart") then
+					v.Transparency = 1
+				end
+			end
+
 
 			local Pos1 = Common.piecewiselerp(t1, Points, lengthtable, totallength)
 			local Pos2 = Common.piecewiselerp(t2, Points, lengthtable, totallength)
@@ -161,49 +168,58 @@ do
 			local distance = (CameraPosition - self.variables.MainPart.Position).Magnitude
 
 			if distance > self.LODDistance then
-				
+				if not self.variables.LodActivated then
+					self.variables.LodActivated = true
+				end
+			else
+				if self.variables.LodActivated then
+					self.variables.LodActivated = false
+				end
 			end
 
-			local speed = (self.Speed :: number * dt) / self.variables.ActualDistanceBetweenTreads
-			self.variables.offset = (self.variables.offset :: number + speed :: number) % 1
+			if not self.variables.LodActivated then
+				local speed = (self.Speed :: number * dt) / self.variables.ActualDistanceBetweenTreads
+				self.variables.offset = (self.variables.offset :: number + speed :: number) % 1
 
-			local Points, center = returnpoints(self.variables.Wheels)
-			local lengthtable, totallength = Common.getotallength(Points)
-			local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
-            local PartstoMake = math.clamp(numberofparts - #self.variables.Treads,0, 50)
+				local Points, center = returnpoints(self.variables.Wheels)
+				local lengthtable, totallength = Common.getotallength(Points)
+				local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
+				local PartstoMake = math.clamp(numberofparts - #self.variables.Treads,0, 50)
 
-			for _ = 1, PartstoMake do
-				table.insert(self.variables.Treads, {
-					trackpart = "create",
-				})
-			end
+				for _ = 1, PartstoMake do
+					table.insert(self.variables.Treads, {
+						trackpart = "create",
+					})
+				end
 
-			for segment, tread in ipairs(self.variables.Treads) do
-				if segment <= numberofparts then
-					local t1 = ( ( (segment - 1) / numberofparts) + self.variables.offset) % 1
-					local t2 = ( (segment / numberofparts) + self.variables.offset) % 1
+				for segment, tread in ipairs(self.variables.Treads) do
+					if segment <= numberofparts then
+						local t1 = ( ( (segment - 1) / numberofparts) + self.variables.offset) % 1
+						local t2 = ( (segment / numberofparts) + self.variables.offset) % 1
 
-					local Pos1 = Common.piecewiselerp(t1, Points, lengthtable, totallength)
-					local Pos2 = Common.piecewiselerp(t2, Points, lengthtable, totallength)
-					if segment == 1 then
-						self.variables.ActualDistanceBetweenTreads = (Pos1 - Pos2).Magnitude
+						local Pos1 = Common.piecewiselerp(t1, Points, lengthtable, totallength)
+						local Pos2 = Common.piecewiselerp(t2, Points, lengthtable, totallength)
+						if segment == 1 then
+							self.variables.ActualDistanceBetweenTreads = (Pos1 - Pos2).Magnitude
+						end
+						local midpoint = (Pos1 + Pos2) / 2
+						local direction = (Pos2 - Pos1).Unit
+						local outward = (Pos1 - center).Unit
+
+						if math.abs(direction:Dot(outward)) > 0.99 then
+							outward = direction:Cross(Vector3.new(0, 1, 0)).Unit
+						end
+
+						local targetCF = CFrame.lookAt(midpoint, Pos2, outward * -1)
+						temp[tread.trackpart] = {targetCF, segment} :: {CFrame | number}
+					else
+						temp[tread.trackpart] = "destroy"
+						table.remove(self.variables.Treads, segment)
 					end
-					local midpoint = (Pos1 + Pos2) / 2
-					local direction = (Pos2 - Pos1).Unit
-					local outward = (Pos1 - center).Unit
-
-					if math.abs(direction:Dot(outward)) > 0.99 then
-    					outward = direction:Cross(Vector3.new(0, 1, 0)).Unit
-					end
-
-					local targetCF = CFrame.lookAt(midpoint, Pos2, outward * -1)
-					temp[tread.trackpart] = {targetCF, segment} :: {CFrame | number}
-				else
-					temp[tread.trackpart] = "destroy"
-					table.remove(self.variables.Treads, segment)
 				end
 			end
 		end
+		
 		debug.profileend()
 		task.synchronize()
 
@@ -222,9 +238,10 @@ do
 					local treadlist = self.variables.Treads :: {{trackpart: Instance | BasePart | Model | string}}
 					treadlist[segment].trackpart = TrackPart
 				end
-				
 			elseif data == "destroy" then
 				value:Destroy()
+			elseif typeof(data) == "number" then
+
 			end
 		end
 	end
