@@ -1,6 +1,6 @@
 
 export type TrackSettings = {
-	TrackModel: Model?,
+	TrackModel: Model | BasePart,
 	TrackLength: number,
 	SeperateActor: boolean,
 }

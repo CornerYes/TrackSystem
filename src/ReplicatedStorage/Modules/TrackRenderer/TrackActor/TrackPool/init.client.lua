@@ -89,6 +89,7 @@ do
 			track_settings = track_settings,
 			Event = nil :: RBXScriptConnection?,
 			variables = {
+				IsAModel = track_settings.TrackModel:IsA("Model") :: boolean,
 				ActualDistanceBetweenTreads = track_settings.TrackLength :: number,
 				offset = 0 :: number,
 				Wheels = {} :: { BasePart },
@@ -173,7 +174,7 @@ do
 					})
 				end
 
-				for segment, tread in ipairs(self.variables.Treads) do
+				for segment, tread : {trackpart: Model | string | BasePart} in ipairs(self.variables.Treads) do
 					if segment <= numberofparts then
 						local t1 = ( ( (segment - 1) / numberofparts) + self.variables.offset) % 1
 						local t2 = ( (segment / numberofparts) + self.variables.offset) % 1
@@ -186,7 +187,17 @@ do
 						local midpoint = (Pos1 + Pos2) / 2
 						
 						local targetCF = CFrame.lookAt(midpoint, Pos2, Face)
-						temp[tread.trackpart] = {targetCF, segment} :: {CFrame | number}
+						--temp[tread.trackpart] = {targetCF, segment} :: {CFrame | number}
+						if typeof(tread.trackpart) ~= "string" then
+							if self.variables.IsAModel then
+								local model = tread.trackpart :: Model
+								table.insert(bulkmove.Parts, model.PrimaryPart :: BasePart)
+							else
+								local part = tread.trackpart :: BasePart
+								table.insert(bulkmove.Parts, part :: BasePart)
+							end
+						end
+						table.insert(bulkmove.CFrames, targetCF)
 					else
 						temp[tread.trackpart] = {"destroy", segment} :: {string | number}
 						table.remove(self.variables.Treads, segment)
@@ -197,7 +208,6 @@ do
 
 		debug.profileend()
 		task.synchronize()
-
 		for value, data in pairs(temp) do
 			if typeof(data) == "table" then
 				if typeof(data[1]) == "CFrame" then
@@ -206,15 +216,22 @@ do
 					if typeof(value) ~= "string" then
 						value:PivotTo(CF)
 					else
-						local TrackPart = self.track_settings.TrackModel
-						TrackPart = TrackPart:Clone() :: Model
-						TrackPart.Parent = workspace.Terrain
-						TrackPart.Name = "trackpart_"..tostring(segment)
-						TrackPart:PivotTo(CF)
-						local treadlist = self.variables.Treads :: {{trackpart: Instance | BasePart | Model | string}}
-						treadlist[segment].trackpart = TrackPart
+
+					local TrackPart = self.track_settings.TrackModel:Clone()
+					TrackPart.Parent = workspace.Terrain
+					TrackPart.Name = "trackpart_"..tostring(segment)
+					
+					if self.variables.IsAModel then
+						local model = TrackPart :: Model
+						table.insert(bulkmove.Parts, model.PrimaryPart :: BasePart)
+					else
+						table.insert(bulkmove.Parts, TrackPart :: BasePart)
 					end
-				elseif typeof(data[1]) == "string" then
+					
+					local treadlist = self.variables.Treads :: {{trackpart: Instance | BasePart | Model | string}}
+					treadlist[segment].trackpart = TrackPart
+				end
+			elseif typeof(data[1]) == "string" then
 					if data[1] == "destroy" then
 						if typeof(value) ~= "string" then
 							value:Destroy()
@@ -223,10 +240,9 @@ do
 						end
 					end
 				end
-			elseif typeof(data) == "number" then
-
 			end
 		end
+		workspace:BulkMoveTo(bulkmove.Parts, bulkmove.CFrames)
 	end
 end
 

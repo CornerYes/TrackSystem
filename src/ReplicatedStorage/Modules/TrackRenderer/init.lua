@@ -1,4 +1,5 @@
 --!strict
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local TypeDef = require(script.TypeDefinitions)
 local module = {}
@@ -20,7 +21,7 @@ end
 
 function module.newsettings(): TypeDef.TrackSettings
 	return {
-		TrackModel = nil,
+		TrackModel = ReplicatedStorage.Tracks.Brick,
 		TrackLength = 100,
 		SeperateActor = false,
 	}
