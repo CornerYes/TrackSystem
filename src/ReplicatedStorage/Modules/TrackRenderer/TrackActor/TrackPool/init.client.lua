@@ -90,7 +90,6 @@ do
 			Event = nil :: RBXScriptConnection?,
 			variables = {
 				IsAModel = track_settings.TrackModel:IsA("Model") :: boolean,
-				ActualDistanceBetweenTreads = track_settings.TrackLength :: number,
 				offset = 0 :: number,
 				Wheels = {} :: { BasePart },
 				Treads = {} :: {{trackpart: Instance | BasePart | Model | string}},
@@ -160,13 +159,13 @@ do
 			end
 
 			if not self.variables.LodActivated then
-				local speed = (self.Speed :: number * dt) / self.variables.ActualDistanceBetweenTreads
-				self.variables.offset = (self.variables.offset :: number + speed :: number) % 1
-
 				local Points = returnpoints(self.variables.Wheels)
 				local lengthtable, totallength = Common.getotallength(Points)
 				local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
 				local PartstoMake = math.clamp(numberofparts - #self.variables.Treads,0, 50)
+
+				local speed = (self.Speed :: number * dt) / totallength
+				self.variables.offset = (self.variables.offset :: number + speed :: number) % 1
 
 				for _ = 1, PartstoMake do
 					table.insert(self.variables.Treads, {
@@ -181,9 +180,6 @@ do
 
 						local Pos1, Face = Common.piecewiselerp(t1, Points, lengthtable, totallength)
 						local Pos2 = Common.piecewiselerp(t2, Points, lengthtable, totallength)
-						if segment == 1 then
-							self.variables.ActualDistanceBetweenTreads = (Pos1 - Pos2).Magnitude
-						end
 						local midpoint = (Pos1 + Pos2) / 2
 						
 						local targetCF = CFrame.lookAt(midpoint, Pos2, Face)
@@ -208,6 +204,8 @@ do
 
 		debug.profileend()
 		task.synchronize()
+		debug.profilebegin("UpdateCFrameTrackParts")
+
 		for value, data in pairs(temp) do
 			if typeof(data) == "table" then
 				if typeof(data[1]) == "CFrame" then
@@ -216,22 +214,23 @@ do
 					if typeof(value) ~= "string" then
 						value:PivotTo(CF)
 					else
+						local TrackPart = self.track_settings.TrackModel:Clone()
+						TrackPart.Parent = workspace.Terrain
+						TrackPart.Name = "trackpart_"..tostring(segment)
 
-					local TrackPart = self.track_settings.TrackModel:Clone()
-					TrackPart.Parent = workspace.Terrain
-					TrackPart.Name = "trackpart_"..tostring(segment)
-					
-					if self.variables.IsAModel then
-						local model = TrackPart :: Model
-						table.insert(bulkmove.Parts, model.PrimaryPart :: BasePart)
-					else
-						table.insert(bulkmove.Parts, TrackPart :: BasePart)
+						if self.variables.IsAModel then
+							local model = TrackPart :: Model
+							table.insert(bulkmove.Parts, model.PrimaryPart :: BasePart)
+						else
+							table.insert(bulkmove.Parts, TrackPart :: BasePart)
+						end
+						table.insert(bulkmove.CFrames, CF)
+
+						--TrackPart:PivotTo(CF)
+						local treadlist = self.variables.Treads :: {{trackpart: Instance | BasePart | Model | string}}
+						treadlist[segment].trackpart = TrackPart
 					end
-					
-					local treadlist = self.variables.Treads :: {{trackpart: Instance | BasePart | Model | string}}
-					treadlist[segment].trackpart = TrackPart
-				end
-			elseif typeof(data[1]) == "string" then
+				elseif typeof(data[1]) == "string" then
 					if data[1] == "destroy" then
 						if typeof(value) ~= "string" then
 							value:Destroy()
@@ -243,6 +242,7 @@ do
 			end
 		end
 		workspace:BulkMoveTo(bulkmove.Parts, bulkmove.CFrames)
+		debug.profileend()
 	end
 end
 
