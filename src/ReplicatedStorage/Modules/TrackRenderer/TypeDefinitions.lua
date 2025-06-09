@@ -4,6 +4,7 @@ export type TrackSettings = {
 	TrackLength: number,
 	SeperateActor: boolean,
 	LODPartWidth: number,
+	LODPartHeight: number,
 }
 
 return {}

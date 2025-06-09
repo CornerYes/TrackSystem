@@ -7,8 +7,8 @@ local trackclass = {}
 local activetracks = {}
 trackclass.__index = trackclass
 
-local function returnpoints(Wheels: { BasePart }): ({ Vector3 | Common.PrePoint  })
-	local Points: {Vector3 | Common.PrePoint} = {}
+local function returnpoints(Wheels: { BasePart }): ({ Common.PrePoint  })
+	local Points: {Common.PrePoint} = {}
 	local WheelPoints = {}
 	for index, wheel in ipairs(Wheels) do
 		local nextindex = index + 1
@@ -131,6 +131,40 @@ do
 			self.variables.Treads[segment] = {
 				trackpart = TrackPart,
 			}
+		end
+
+		--generate LOD parts
+		for i = 1, #Points - 1 do
+			local currentPoint = Points[i]
+			local nextpoint = Points[i + 1]
+			
+			if #currentPoint > 2 then
+				local p1: Vector3 = currentPoint[1] :: Vector3
+				local p2: Vector3 = currentPoint[2] :: Vector3
+				local wheel: BasePart = currentPoint[3] :: BasePart
+				local radius = wheel.Size.Z / 2
+				local v1 = vector.normalize(Common.vector3tovector(p1) - Common.vector3tovector(wheel.Position))
+				local v2 = vector.normalize(Common.vector3tovector(p2) - Common.vector3tovector(wheel.Position))
+
+				local angle = math.acos(vector.dot(v1, v2))
+				local arcLength = angle * radius
+				local numberofpartscurve = math.ceil(arcLength / 0.3)
+				for i = 1, numberofpartscurve do
+					local t1 = (i - 1) / numberofpartscurve
+					local t2 = i / numberofpartscurve
+
+					
+					local pos1 = Common.createcirculararc(Common.vector3tovector(wheel.Position), Common.vector3tovector(p1), Common.vector3tovector(p2), radius, Common.vector3tovector(wheel.CFrame.RightVector), t1)
+					local pos2 = Common.createcirculararc(Common.vector3tovector(wheel.Position), Common.vector3tovector(p1), Common.vector3tovector(p2), radius, Common.vector3tovector(wheel.CFrame.RightVector), t2)
+
+					local midpoint = (pos1 + pos2) / 2
+					local targetcf = CFrame.lookAt(Common.vectortovector3(midpoint), Common.vectortovector3(pos2), wheel.CFrame.RightVector)
+					local LODPart = game.ReplicatedStorage.Tracks.LODPart:Clone() :: BasePart
+					LODPart.Parent = workspace.Terrain
+					LODPart.CFrame = targetcf
+					LODPart.Size = Vector3.new(self.track_settings.LODPartHeight :: number, self.track_settings.LODPartWidth :: number, 0.3)
+				end
+			end
 		end
 	end
 

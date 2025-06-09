@@ -25,6 +25,7 @@ function module.newsettings(): TypeDef.TrackSettings
 		TrackLength = 100,
 		SeperateActor = false,
 		LODPartWidth = 1,
+		LODPartHeight = 1,
 	}
 end
 
