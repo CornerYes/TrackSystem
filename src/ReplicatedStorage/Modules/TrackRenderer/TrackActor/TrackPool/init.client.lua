@@ -165,7 +165,6 @@ do
 
 				local speed = (self.Speed :: number * dt) / totallength
 				self.variables.offset = (self.variables.offset :: number + speed :: number) % 1
-
 				for _ = 1, PartstoMake do
 					table.insert(self.variables.Treads, {
 						trackpart = "create",
@@ -177,8 +176,8 @@ do
 						local t1 = ( ( (segment - 1) / numberofparts) + self.variables.offset) % 1
 						local t2 = ( (segment / numberofparts) + self.variables.offset) % 1
 
-						local Pos1, Face = Common.piecewiselerp(t1, Points, lengthtable, totallength)
-						local Pos2 = Common.piecewiselerp(t2, Points, lengthtable, totallength)
+						local Pos1, Face = Common.lerpthroughpoints(t1, Points, lengthtable, totallength)
+						local Pos2 = Common.lerpthroughpoints(t2, Points, lengthtable, totallength)
 						local midpoint = (Pos1 + Pos2) / 2
 						
 						local targetCF = CFrame.lookAt(midpoint, Pos2, Face)

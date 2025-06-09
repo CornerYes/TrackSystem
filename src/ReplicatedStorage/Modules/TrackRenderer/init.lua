@@ -24,6 +24,7 @@ function module.newsettings(): TypeDef.TrackSettings
 		TrackModel = ReplicatedStorage.Tracks.Brick,
 		TrackLength = 100,
 		SeperateActor = false,
+		LODPartWidth = 1,
 	}
 end
 

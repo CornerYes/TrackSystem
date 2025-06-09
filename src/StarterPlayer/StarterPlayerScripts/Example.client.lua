@@ -3,8 +3,6 @@ local TrackRenderer = require(game.ReplicatedStorage.Modules.TrackRenderer)
 task.wait(3)
 print("Tank client script started")
 
-
-
 local tracks = {}
 
 for _, v: Model in ipairs(workspace.Thing:GetChildren()) do
@@ -21,7 +19,7 @@ for _, v: Model in ipairs(workspace.Thing:GetChildren()) do
     end
 end
 
-
+--Commands for testing
 local client_commands = {
     ["/speed"] = function(speed)
         local newSpeed = tonumber(speed)

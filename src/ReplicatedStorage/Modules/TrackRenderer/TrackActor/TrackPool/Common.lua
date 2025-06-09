@@ -25,6 +25,14 @@ function module.getexternaltangentpoint(c1pos: vector, radi1: number, c2pos: vec
 	return t1, t2
 end
 
+function module.weldconstaint(p0: BasePart, p1: BasePart): WeldConstraint
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = p0
+	weld.Part1 = p1
+	weld.Parent = p0
+	return weld
+end
+
 --mainly used for debugging
 function module.createadornment(name: string, raidus: number, CF: CFrame, color: Color3): BasePart
 	local SphereAdornment = Instance.new("SphereHandleAdornment")
@@ -123,7 +131,7 @@ function module.getotallength(points: {Vector3 | PrePoint }): ({ Point }, number
     return legnthtable, totallength
 end
 
-function module.piecewiselerp(t: number, points: {Vector3 | PrePoint}, legnthtable : {Point}, totallength: number): (Vector3, Vector3)
+function module.lerpthroughpoints(t: number, points: {Vector3 | PrePoint}, legnthtable : {Point}, totallength: number): (Vector3, Vector3)
     local target = t * totallength
 
     local distance = 0
