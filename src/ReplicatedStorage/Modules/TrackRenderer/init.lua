@@ -63,11 +63,6 @@ function module:SetSpeed(number)
 	self:UpdatePool_PrivateFunction({Speed = number})
 end
 
-function module:SetSagging(number)
-	self.Sagging = number
-	self:UpdatePool_PrivateFunction({Sagging = number})
-end
-
 function module:SetLODDistance(number)
 	self.LODDistance = number
 	self:UpdatePool_PrivateFunction({LODDistance = number})

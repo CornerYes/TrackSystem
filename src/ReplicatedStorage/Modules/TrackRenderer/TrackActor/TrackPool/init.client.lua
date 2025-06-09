@@ -84,7 +84,6 @@ do
 		local object = {
 			IsActive = false,
 			Speed = 0 :: number,
-			Sagging = 0 :: number,
 			LODDistance = 100,
 			track_settings = track_settings,
 			Event = nil :: RBXScriptConnection?,
