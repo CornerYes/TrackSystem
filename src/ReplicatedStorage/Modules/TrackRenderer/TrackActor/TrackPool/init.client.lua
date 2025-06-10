@@ -1,5 +1,6 @@
 --!strict
-local TypeDef = require(game.ReplicatedStorage.Modules.TrackRenderer.TypeDefinitions)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TypeDefinitions = require(ReplicatedStorage.Modules.TrackRenderer.TypeDefinitions)
 local Common = require(script.Common)    
 local Actor = script.Parent
 local Camera = game.Workspace.CurrentCamera
@@ -80,7 +81,7 @@ local function returnpoints(Wheels: { BasePart }): ({ Common.PrePoint  })
 end
 
 do
-	function trackclass.new(track_settings: TypeDef.TrackSettings)
+	function trackclass.new(track_settings: TypeDefinitions.TrackSettings)
 		local object = {
 			IsActive = false,
 			Speed = 0 :: number,
@@ -132,7 +133,7 @@ do
 				trackpart = TrackPart,
 			}
 		end
-
+		local lodlengthcurve = 1
 		--generate LOD parts
 		for i = 1, #Points - 1 do
 			local currentPoint = Points[i]
@@ -145,15 +146,12 @@ do
 				local radius = wheel.Size.Z / 2
 				local v1 = vector.normalize(Common.vector3tovector(p1) - Common.vector3tovector(wheel.Position))
 				local v2 = vector.normalize(Common.vector3tovector(p2) - Common.vector3tovector(wheel.Position))
-
 				local angle = math.acos(vector.dot(v1, v2))
 				local arcLength = angle * radius
-				local numberofpartscurve = math.ceil(arcLength / 0.3)
-				for i = 1, numberofpartscurve do
-					local t1 = (i - 1) / numberofpartscurve
-					local t2 = i / numberofpartscurve
-
-					
+				local numberofpartscurve = math.ceil(arcLength / lodlengthcurve)
+				for segment = 1, numberofpartscurve do
+					local t1 = (segment - 1) / numberofpartscurve
+					local t2 = segment / numberofpartscurve
 					local pos1 = Common.createcirculararc(Common.vector3tovector(wheel.Position), Common.vector3tovector(p1), Common.vector3tovector(p2), radius, Common.vector3tovector(wheel.CFrame.RightVector), t1)
 					local pos2 = Common.createcirculararc(Common.vector3tovector(wheel.Position), Common.vector3tovector(p1), Common.vector3tovector(p2), radius, Common.vector3tovector(wheel.CFrame.RightVector), t2)
 
@@ -162,8 +160,34 @@ do
 					local LODPart = game.ReplicatedStorage.Tracks.LODPart:Clone() :: BasePart
 					LODPart.Parent = workspace.Terrain
 					LODPart.CFrame = targetcf
-					LODPart.Size = Vector3.new(self.track_settings.LODPartHeight :: number, self.track_settings.LODPartWidth :: number, 0.3)
+					LODPart.Size = Vector3.new(self.track_settings.LODPartHeight :: number, self.track_settings.LODPartWidth :: number, lodlengthcurve)
+					Common.weldconstaint(LODPart, self.variables.MainPart :: BasePart)
+					table.insert(LODPart :: any, self.variables.LODParts)
+					
 				end
+
+				local pos2 = nextpoint[1] :: Vector3
+				local midpoint = (p2 + pos2) / 2
+				local targetcf = CFrame.lookAt(midpoint, pos2, wheel.CFrame.RightVector)
+				local LODPart = game.ReplicatedStorage.Tracks.LODPart:Clone() :: BasePart
+				LODPart.Parent = workspace.Terrain
+				LODPart.CFrame = targetcf
+				LODPart.Size = Vector3.new(self.track_settings.LODPartHeight :: number, self.track_settings.LODPartWidth :: number, (p2 - pos2).Magnitude)
+				Common.weldconstaint(LODPart, self.variables.MainPart :: BasePart)
+				table.insert(LODPart :: any, self.variables.LODParts)
+			else
+				local p1 = currentPoint[1] :: Vector3
+				local wheel = currentPoint[2] :: BasePart
+
+				local pos2 = nextpoint[1] :: Vector3
+				local midpoint = (p1 + pos2) / 2
+				local targetcf = CFrame.lookAt(midpoint, pos2, wheel.CFrame.RightVector)
+				local LODPart = game.ReplicatedStorage.Tracks.LODPart:Clone() :: BasePart
+				LODPart.Parent = workspace.Terrain
+				LODPart.CFrame = targetcf
+				LODPart.Size = Vector3.new(self.track_settings.LODPartHeight :: number, self.track_settings.LODPartWidth :: number, (p1 - pos2).Magnitude)
+				Common.weldconstaint(LODPart, self.variables.MainPart :: BasePart)
+				table.insert(LODPart :: any, self.variables.LODParts)
 			end
 		end
 	end
@@ -278,7 +302,7 @@ do
 	end
 end
 
-Actor:BindToMessage("Init", function(ID, track_settings: TypeDef.TrackSettings, Wheels)
+Actor:BindToMessage("Init", function(ID, track_settings: TypeDefinitions.TrackSettings, Wheels)
 	local track = trackclass.new(track_settings)
 	activetracks[ID] = track
 	track:Init(Wheels)

@@ -11,6 +11,8 @@ for _, v: Model in ipairs(workspace.Thing:GetChildren()) do
         tracksettings.TrackLength = 1
         tracksettings.TrackModel = game.ReplicatedStorage.Tracks.SimpleTrack
         tracksettings.SeperateActor = false
+        tracksettings.LODPartWidth = 3
+        tracksettings.LODPartHeight = 0.3
         local track = TrackRenderer.new(tracksettings, v:GetChildren())
         
         track:Render()
