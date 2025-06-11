@@ -162,7 +162,7 @@ do
 					LODPart.CFrame = targetcf
 					LODPart.Size = Vector3.new(self.track_settings.LODPartHeight :: number, self.track_settings.LODPartWidth :: number, lodlengthcurve)
 					Common.weldconstaint(LODPart, self.variables.MainPart :: BasePart)
-					table.insert(LODPart :: any, self.variables.LODParts)
+					table.insert(self.variables.LODParts, LODPart)
 					
 				end
 
@@ -174,7 +174,7 @@ do
 				LODPart.CFrame = targetcf
 				LODPart.Size = Vector3.new(self.track_settings.LODPartHeight :: number, self.track_settings.LODPartWidth :: number, (p2 - pos2).Magnitude)
 				Common.weldconstaint(LODPart, self.variables.MainPart :: BasePart)
-				table.insert(LODPart :: any, self.variables.LODParts)
+				table.insert(self.variables.LODParts, LODPart)
 			else
 				local p1 = currentPoint[1] :: Vector3
 				local wheel = currentPoint[2] :: BasePart
@@ -187,7 +187,7 @@ do
 				LODPart.CFrame = targetcf
 				LODPart.Size = Vector3.new(self.track_settings.LODPartHeight :: number, self.track_settings.LODPartWidth :: number, (p1 - pos2).Magnitude)
 				Common.weldconstaint(LODPart, self.variables.MainPart :: BasePart)
-				table.insert(LODPart :: any, self.variables.LODParts)
+				table.insert(self.variables.LODParts, LODPart)
 			end
 		end
 	end
@@ -208,11 +208,21 @@ do
 			if distance > self.LODDistance then
 				if not self.variables.LodActivated then
 					self.variables.LodActivated = true
+
+					for _, lodtread in ipairs(self.variables.LODParts) do
+						temp[lodtread] = 0
+					end
+
 				end
 			else
 				if self.variables.LodActivated then
 					self.variables.LodActivated = false
 				end
+
+				for _, lodtread in ipairs(self.variables.LODParts) do
+					temp[lodtread] = 1
+				end
+				
 			end
 
 			if not self.variables.LodActivated then
@@ -295,9 +305,11 @@ do
 						end
 					end
 				end
+			elseif typeof(data) == "number" then
+				value.Transparency = data
 			end
 		end
-		workspace:BulkMoveTo(bulkmove.Parts, bulkmove.CFrames)
+		workspace:BulkMoveTo(bulkmove.Parts, bulkmove.CFrames, Enum.BulkMoveMode.FireCFrameChanged)
 		debug.profileend()
 	end
 end
@@ -322,6 +334,11 @@ Actor:BindToMessage("change", function(ID, newdata: { IsActive: boolean?, Speed:
 		end
 
 		if track.IsActive == true then
+			if track.variables.LodActivated then
+				for _, lodtread in ipairs(track.variables.LODParts) do
+					lodtread.Transparency = 0
+				end
+			end
 			for _, tread in ipairs(track.variables.Treads) do
 				local trackpart = tread.trackpart :: Model | BasePart
 				if typeof(trackpart) ~= "string" then
@@ -337,6 +354,9 @@ Actor:BindToMessage("change", function(ID, newdata: { IsActive: boolean?, Speed:
 				end
 			end
 		else
+			for _, lodtread in ipairs(track.variables.LODParts) do
+				lodtread.Transparency = 1
+			end
 			for _, tread in ipairs(track.variables.Treads) do
 				local trackpart = tread.trackpart :: Model | BasePart
 				if typeof(trackpart) ~= "string" then
