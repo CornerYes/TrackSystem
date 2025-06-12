@@ -200,7 +200,7 @@ do
 			CFrames = {},
 		}
 
-		debug.profilebegin("UpdateTrack")
+		
 		if self.IsActive == true then
 			local CameraPosition = Camera.CFrame.Position
 			local distance = (CameraPosition - self.variables.MainPart.Position).Magnitude
@@ -214,7 +214,14 @@ do
 					end
 
 					for _, tread in ipairs(self.variables.Treads) do
-
+						if self.variables.IsAModel then
+							local model = tread :: Model
+							table.insert(bulkmove.Parts, model.PrimaryPart :: BasePart)
+						else
+							table.insert(bulkmove.Parts, tread :: BasePart)
+						end
+						table.insert(bulkmove.CFrames, CFrame.new(0,0,0))
+						
 					end
 				end
 			else
@@ -227,7 +234,7 @@ do
 				end
 				
 			end
-
+	
 			if not self.variables.LodActivated then
 				local Points = returnpoints(self.variables.Wheels)
 				local lengthtable, totallength = Common.getotallength(Points)
@@ -238,9 +245,10 @@ do
 				self.variables.offset = (self.variables.offset :: number + speed :: number) % 1
 
 				for _ = 1, PartstoMake do
-					table.insert(self.variables.Treads, {
+					local data = {
 						trackpart = "create",
-					})
+					 }
+					table.insert(self.variables.Treads, data)
 				end
 
 				for segment, tread : {trackpart: Model | string | BasePart} in ipairs(self.variables.Treads) do
@@ -271,16 +279,14 @@ do
 					end
 				end
 			end
+			debug.profileend()
 		end
-
-		debug.profileend()
 		task.synchronize()
-		debug.profilebegin("UpdateCFrameTrackParts")
+		
 
 		for value, data in pairs(temp) do
 			if typeof(data) == "table" then
 				if typeof(data[1]) == "CFrame" then
-					local CF = data[1] :: CFrame
 					local segment = data[2] :: number
 
 					local TrackPart = self.track_settings.TrackModel:Clone() :: any
@@ -295,8 +301,6 @@ do
 						
 						table.insert(bulkmove.Parts, TrackPart :: BasePart)
 					end
-					--table.insert(bulkmove.CFrames, CF)
-
 					local treadlist = self.variables.Treads :: {{trackpart: Instance | BasePart | Model | string}}
 					treadlist[segment].trackpart = TrackPart
 					
