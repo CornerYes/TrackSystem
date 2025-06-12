@@ -213,6 +213,9 @@ do
 						temp[lodtread] = 0
 					end
 
+					for _, tread in ipairs(self.variables.Treads) do
+
+					end
 				end
 			else
 				if self.variables.LodActivated then
@@ -233,6 +236,7 @@ do
 
 				local speed = (self.Speed :: number * dt) / totallength
 				self.variables.offset = (self.variables.offset :: number + speed :: number) % 1
+
 				for _ = 1, PartstoMake do
 					table.insert(self.variables.Treads, {
 						trackpart = "create",
@@ -249,15 +253,16 @@ do
 						local midpoint = (Pos1 + Pos2) / 2
 						
 						local targetCF = CFrame.lookAt(midpoint, Pos2, Face)
-						--temp[tread.trackpart] = {targetCF, segment} :: {CFrame | number}
 						if typeof(tread.trackpart) ~= "string" then
 							if self.variables.IsAModel then
 								local model = tread.trackpart :: Model
 								table.insert(bulkmove.Parts, model.PrimaryPart :: BasePart)
-							else
+							elseif typeof(tread.trackpart) == "string" and tread.trackpart == "create" then
 								local part = tread.trackpart :: BasePart
 								table.insert(bulkmove.Parts, part :: BasePart)
 							end
+						else
+							temp[tread.trackpart] = {targetCF, segment} :: {CFrame | number}
 						end
 						table.insert(bulkmove.CFrames, targetCF)
 					else
@@ -277,25 +282,24 @@ do
 				if typeof(data[1]) == "CFrame" then
 					local CF = data[1] :: CFrame
 					local segment = data[2] :: number
-					if typeof(value) ~= "string" then
-						value:PivotTo(CF)
+
+					local TrackPart = self.track_settings.TrackModel:Clone() :: any
+					TrackPart.Parent = workspace.Terrain
+					TrackPart.Name = "trackpart_"..tostring(segment)
+
+					if self.variables.IsAModel then
+						
+						local model = TrackPart :: Model
+						table.insert(bulkmove.Parts, model.PrimaryPart :: BasePart)
 					else
-						local TrackPart = self.track_settings.TrackModel:Clone()
-						TrackPart.Parent = workspace.Terrain
-						TrackPart.Name = "trackpart_"..tostring(segment)
-
-						if self.variables.IsAModel then
-							local model = TrackPart :: Model
-							table.insert(bulkmove.Parts, model.PrimaryPart :: BasePart)
-						else
-							table.insert(bulkmove.Parts, TrackPart :: BasePart)
-						end
-						table.insert(bulkmove.CFrames, CF)
-
-						--TrackPart:PivotTo(CF)
-						local treadlist = self.variables.Treads :: {{trackpart: Instance | BasePart | Model | string}}
-						treadlist[segment].trackpart = TrackPart
+						
+						table.insert(bulkmove.Parts, TrackPart :: BasePart)
 					end
+					--table.insert(bulkmove.CFrames, CF)
+
+					local treadlist = self.variables.Treads :: {{trackpart: Instance | BasePart | Model | string}}
+					treadlist[segment].trackpart = TrackPart
+					
 				elseif typeof(data[1]) == "string" then
 					if data[1] == "destroy" then
 						if typeof(value) ~= "string" then
@@ -309,7 +313,10 @@ do
 				value.Transparency = data
 			end
 		end
-		workspace:BulkMoveTo(bulkmove.Parts, bulkmove.CFrames, Enum.BulkMoveMode.FireCFrameChanged)
+		if #bulkmove.CFrames == #bulkmove.Parts then
+			workspace:BulkMoveTo(bulkmove.Parts, bulkmove.CFrames, Enum.BulkMoveMode.FireCFrameChanged)
+		end
+
 		debug.profileend()
 	end
 end
