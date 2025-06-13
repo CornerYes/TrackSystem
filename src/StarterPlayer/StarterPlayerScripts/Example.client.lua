@@ -7,6 +7,7 @@ local tracks = {}
 
 for _, v: Model in ipairs(workspace.Thing:GetChildren()) do
     if v:IsA("Model") then
+        
         local tracksettings = TrackRenderer.newsettings()
         tracksettings.TrackLength = 1
         tracksettings.TrackModel = game.ReplicatedStorage.Tracks.SimpleTrack

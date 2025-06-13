@@ -204,38 +204,39 @@ do
 		if self.IsActive == true then
 			local CameraPosition = Camera.CFrame.Position
 			local distance = (CameraPosition - self.variables.MainPart.Position).Magnitude
-
-			if distance > self.LODDistance then
+			local currentGraphicsLevel = UserSettings().GameSettings.SavedQualityLevel
+			if distance > self.LODDistance or currentGraphicsLevel == Enum.SavedQualitySetting.QualityLevel1  then
 				if not self.variables.LodActivated then
 					self.variables.LodActivated = true
 
 					for _, lodtread in ipairs(self.variables.LODParts) do
 						temp[lodtread] = 0
 					end
-
 					for _, tread in ipairs(self.variables.Treads) do
+
 						if self.variables.IsAModel then
-							local model = tread :: Model
+							local model = tread.trackpart :: Model
 							table.insert(bulkmove.Parts, model.PrimaryPart :: BasePart)
 						else
-							table.insert(bulkmove.Parts, tread :: BasePart)
+							table.insert(bulkmove.Parts, tread.trackpart :: BasePart)
 						end
-						table.insert(bulkmove.CFrames, CFrame.new(0,0,0))
-						
+
+						table.insert(bulkmove.CFrames, CFrame.new(0,-50,0))
 					end
+					print(#bulkmove.CFrames, #bulkmove.Parts)
 				end
 			else
 				if self.variables.LodActivated then
 					self.variables.LodActivated = false
+					
+					for _, lodtread in ipairs(self.variables.LODParts) do
+						temp[lodtread] = 1
+					end
 				end
-
-				for _, lodtread in ipairs(self.variables.LODParts) do
-					temp[lodtread] = 1
-				end
-				
 			end
-	
+			
 			if not self.variables.LodActivated then
+				debug.profilebegin("Calculate Length and Points")
 				local Points = returnpoints(self.variables.Wheels)
 				local lengthtable, totallength = Common.getotallength(Points)
 				local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
@@ -250,16 +251,17 @@ do
 					 }
 					table.insert(self.variables.Treads, data)
 				end
-
+				debug.profileend()
+				
 				for segment, tread : {trackpart: Model | string | BasePart} in ipairs(self.variables.Treads) do
 					if segment <= numberofparts then
 						local t1 = ( ( (segment - 1) / numberofparts) + self.variables.offset) % 1
 						local t2 = ( (segment / numberofparts) + self.variables.offset) % 1
-
+						debug.profilebegin("Calculate Treads")
 						local Pos1, Face = Common.lerpthroughpoints(t1, Points, lengthtable, totallength)
 						local Pos2 = Common.lerpthroughpoints(t2, Points, lengthtable, totallength)
 						local midpoint = (Pos1 + Pos2) / 2
-						
+						debug.profileend()
 						local targetCF = CFrame.lookAt(midpoint, Pos2, Face)
 						if typeof(tread.trackpart) ~= "string" then
 							if self.variables.IsAModel then
@@ -279,11 +281,9 @@ do
 					end
 				end
 			end
-			debug.profileend()
 		end
 		task.synchronize()
 		
-
 		for value, data in pairs(temp) do
 			if typeof(data) == "table" then
 				if typeof(data[1]) == "CFrame" then
@@ -317,11 +317,11 @@ do
 				value.Transparency = data
 			end
 		end
+
 		if #bulkmove.CFrames == #bulkmove.Parts then
 			workspace:BulkMoveTo(bulkmove.Parts, bulkmove.CFrames, Enum.BulkMoveMode.FireCFrameChanged)
 		end
-
-		debug.profileend()
+		
 	end
 end
 
