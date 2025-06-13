@@ -65,18 +65,18 @@ local function returnpoints(Wheels: { BasePart }): ({ Common.PrePoint  })
 	for _, PosTable in ipairs(WheelPoints) do
 		if #PosTable.pos > 1 then
 			Points[#Points + 1] = {
-				Common.vectortovector3(PosTable.pos[1]),
-				Common.vectortovector3(PosTable.pos[2]),
+				PosTable.pos[1],
+				PosTable.pos[2],
 				PosTable.pb,
 			} :: Common.PrePoint
 		else
 			for _, Position in ipairs(PosTable.pos) do
-				table.insert(Points, {Common.vectortovector3(Position), PosTable.pb} :: Common.PrePoint)
+				table.insert(Points, {Position, PosTable.pb} :: Common.PrePoint)
 			end
 		end
 	end
 
-	table.insert(Points,{Common.vectortovector3(WheelPoints[1].pos[1]), WheelPoints[1].pb} :: Common.PrePoint)
+	table.insert(Points,{WheelPoints[1].pos[1], WheelPoints[1].pb} :: Common.PrePoint)
 	return Points
 end
 
@@ -140,20 +140,20 @@ do
 			local nextpoint = Points[i + 1]
 			
 			if #currentPoint > 2 then
-				local p1: Vector3 = currentPoint[1] :: Vector3
-				local p2: Vector3 = currentPoint[2] :: Vector3
+				local p1: vector = currentPoint[1] :: vector
+				local p2: vector = currentPoint[2] :: vector
 				local wheel: BasePart = currentPoint[3] :: BasePart
 				local radius = wheel.Size.Z / 2
-				local v1 = vector.normalize(Common.vector3tovector(p1) - Common.vector3tovector(wheel.Position))
-				local v2 = vector.normalize(Common.vector3tovector(p2) - Common.vector3tovector(wheel.Position))
+				local v1 = vector.normalize(p1 - Common.vector3tovector(wheel.Position))
+				local v2 = vector.normalize(p2 - Common.vector3tovector(wheel.Position))
 				local angle = math.acos(vector.dot(v1, v2))
 				local arcLength = angle * radius
 				local numberofpartscurve = math.ceil(arcLength / lodlengthcurve)
 				for segment = 1, numberofpartscurve do
 					local t1 = (segment - 1) / numberofpartscurve
 					local t2 = segment / numberofpartscurve
-					local pos1 = Common.createcirculararc(Common.vector3tovector(wheel.Position), Common.vector3tovector(p1), Common.vector3tovector(p2), radius, Common.vector3tovector(wheel.CFrame.RightVector), t1)
-					local pos2 = Common.createcirculararc(Common.vector3tovector(wheel.Position), Common.vector3tovector(p1), Common.vector3tovector(p2), radius, Common.vector3tovector(wheel.CFrame.RightVector), t2)
+					local pos1 = Common.createcirculararc(Common.vector3tovector(wheel.Position), p1, p2, radius, Common.vector3tovector(wheel.CFrame.RightVector), t1)
+					local pos2 = Common.createcirculararc(Common.vector3tovector(wheel.Position), p1, p2, radius, Common.vector3tovector(wheel.CFrame.RightVector), t2)
 
 					local midpoint = (pos1 + pos2) / 2
 					local targetcf = CFrame.lookAt(Common.vectortovector3(midpoint), Common.vectortovector3(pos2), wheel.CFrame.RightVector)
@@ -166,26 +166,26 @@ do
 					
 				end
 
-				local pos2 = nextpoint[1] :: Vector3
+				local pos2 = nextpoint[1] :: vector
 				local midpoint = (p2 + pos2) / 2
-				local targetcf = CFrame.lookAt(midpoint, pos2, wheel.CFrame.RightVector)
+				local targetcf = CFrame.lookAt(Common.vectortovector3(midpoint), Common.vectortovector3(pos2), wheel.CFrame.RightVector)
 				local LODPart = game.ReplicatedStorage.Tracks.LODPart:Clone() :: BasePart
 				LODPart.Parent = workspace.Terrain
 				LODPart.CFrame = targetcf
-				LODPart.Size = Vector3.new(self.track_settings.LODPartHeight :: number, self.track_settings.LODPartWidth :: number, (p2 - pos2).Magnitude)
+				LODPart.Size = Vector3.new(self.track_settings.LODPartHeight :: number, self.track_settings.LODPartWidth :: number, vector.magnitude(p2 - pos2))
 				Common.weldconstaint(LODPart, self.variables.MainPart :: BasePart)
 				table.insert(self.variables.LODParts, LODPart)
 			else
-				local p1 = currentPoint[1] :: Vector3
+				local p1 = currentPoint[1] :: vector
 				local wheel = currentPoint[2] :: BasePart
 
-				local pos2 = nextpoint[1] :: Vector3
+				local pos2 = nextpoint[1] :: vector
 				local midpoint = (p1 + pos2) / 2
-				local targetcf = CFrame.lookAt(midpoint, pos2, wheel.CFrame.RightVector)
+				local targetcf = CFrame.lookAt(Common.vectortovector3(midpoint), Common.vectortovector3(pos2), wheel.CFrame.RightVector)
 				local LODPart = game.ReplicatedStorage.Tracks.LODPart:Clone() :: BasePart
 				LODPart.Parent = workspace.Terrain
 				LODPart.CFrame = targetcf
-				LODPart.Size = Vector3.new(self.track_settings.LODPartHeight :: number, self.track_settings.LODPartWidth :: number, (p1 - pos2).Magnitude)
+				LODPart.Size = Vector3.new(self.track_settings.LODPartHeight :: number, self.track_settings.LODPartWidth :: number, vector.magnitude(p1 - pos2))
 				Common.weldconstaint(LODPart, self.variables.MainPart :: BasePart)
 				table.insert(self.variables.LODParts, LODPart)
 			end
@@ -223,7 +223,6 @@ do
 
 						table.insert(bulkmove.CFrames, CFrame.new(0,-50,0))
 					end
-					print(#bulkmove.CFrames, #bulkmove.Parts)
 				end
 			else
 				if self.variables.LodActivated then
@@ -236,7 +235,6 @@ do
 			end
 			
 			if not self.variables.LodActivated then
-				debug.profilebegin("Calculate Length and Points")
 				local Points = returnpoints(self.variables.Wheels)
 				local lengthtable, totallength = Common.getotallength(Points)
 				local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
@@ -251,17 +249,14 @@ do
 					 }
 					table.insert(self.variables.Treads, data)
 				end
-				debug.profileend()
 				
 				for segment, tread : {trackpart: Model | string | BasePart} in ipairs(self.variables.Treads) do
 					if segment <= numberofparts then
 						local t1 = ( ( (segment - 1) / numberofparts) + self.variables.offset) % 1
 						local t2 = ( (segment / numberofparts) + self.variables.offset) % 1
-						debug.profilebegin("Calculate Treads")
 						local Pos1, Face = Common.lerpthroughpoints(t1, Points, lengthtable, totallength)
 						local Pos2 = Common.lerpthroughpoints(t2, Points, lengthtable, totallength)
 						local midpoint = (Pos1 + Pos2) / 2
-						debug.profileend()
 						local targetCF = CFrame.lookAt(midpoint, Pos2, Face)
 						if typeof(tread.trackpart) ~= "string" then
 							if self.variables.IsAModel then

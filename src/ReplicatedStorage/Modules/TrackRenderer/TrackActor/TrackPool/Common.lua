@@ -5,7 +5,7 @@ export type Point = {
 }
 
 export type PrePoint = {
-	Vector3 | BasePart
+	vector | BasePart
 }
 
 function module.getexternaltangentpoint(c1pos: vector, radi1: number, c2pos: vector, radi2: number, rv: vector): (vector, vector)
