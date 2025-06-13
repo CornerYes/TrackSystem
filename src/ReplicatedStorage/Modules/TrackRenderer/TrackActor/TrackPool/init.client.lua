@@ -160,7 +160,7 @@ do
 					local LODPart = game.ReplicatedStorage.Tracks.LODPart:Clone() :: BasePart
 					LODPart.Parent = workspace.Terrain
 					LODPart.CFrame = targetcf
-					LODPart.Size = Vector3.new(self.track_settings.LODPartHeight :: number, self.track_settings.LODPartWidth :: number, lodlengthcurve)
+					LODPart.Size = Vector3.new(self.track_settings.LowDetailPartHeight :: number, self.track_settings.LowDetailPartWidth :: number, lodlengthcurve)
 					Common.weldconstaint(LODPart, self.variables.MainPart :: BasePart)
 					table.insert(self.variables.LODParts, LODPart)
 					
@@ -172,7 +172,7 @@ do
 				local LODPart = game.ReplicatedStorage.Tracks.LODPart:Clone() :: BasePart
 				LODPart.Parent = workspace.Terrain
 				LODPart.CFrame = targetcf
-				LODPart.Size = Vector3.new(self.track_settings.LODPartHeight :: number, self.track_settings.LODPartWidth :: number, vector.magnitude(p2 - pos2))
+				LODPart.Size = Vector3.new(self.track_settings.LowDetailPartHeight :: number, self.track_settings.LowDetailPartWidth :: number, vector.magnitude(p2 - pos2))
 				Common.weldconstaint(LODPart, self.variables.MainPart :: BasePart)
 				table.insert(self.variables.LODParts, LODPart)
 			else
@@ -185,7 +185,7 @@ do
 				local LODPart = game.ReplicatedStorage.Tracks.LODPart:Clone() :: BasePart
 				LODPart.Parent = workspace.Terrain
 				LODPart.CFrame = targetcf
-				LODPart.Size = Vector3.new(self.track_settings.LODPartHeight :: number, self.track_settings.LODPartWidth :: number, vector.magnitude(p1 - pos2))
+				LODPart.Size = Vector3.new(self.track_settings.LowDetailPartHeight :: number, self.track_settings.LowDetailPartWidth :: number, vector.magnitude(p1 - pos2))
 				Common.weldconstaint(LODPart, self.variables.MainPart :: BasePart)
 				table.insert(self.variables.LODParts, LODPart)
 			end
