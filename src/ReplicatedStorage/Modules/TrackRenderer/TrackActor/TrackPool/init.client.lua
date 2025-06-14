@@ -396,7 +396,7 @@ Actor:BindToMessage("destroying", function(ID)
                 end
 			end
 		end
-		if track.track_settings.SeperateActor then
+		if track.track_settings.SeparateActor then
 			script.Parent:Destroy()
 		end
 	end

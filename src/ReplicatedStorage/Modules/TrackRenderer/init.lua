@@ -23,7 +23,7 @@ function module.newsettings(): TypeDef.TrackSettings
 	return {
 		TrackModel = ReplicatedStorage.Tracks.Brick,
 		TrackLength = 100,
-		SeperateActor = false,
+		SeparateActor = false,
 		LowDetailPartWidth = 1,
 		LowDetailPartHeight = 1,
 	}
@@ -32,7 +32,7 @@ end
 function module.new(track_settings: TypeDef.TrackSettings, Wheels: {Instance})
 	local actortouse = Actor
 
-	if track_settings.SeperateActor then
+	if track_settings.SeparateActor then
 		actortouse = Actor:Clone()
 		actortouse.Parent = Folder
 	end
@@ -46,7 +46,7 @@ function module.new(track_settings: TypeDef.TrackSettings, Wheels: {Instance})
 	}
 
 	task.spawn(function()
-		if track_settings.SeperateActor then
+		if track_settings.SeparateActor then
 			 task.wait()
 		end
 		object.trackActor:SendMessage("Init", object.ID, track_settings, Wheels)

@@ -2,7 +2,7 @@
 export type TrackSettings = {
 	TrackModel: Model | BasePart,
 	TrackLength: number,
-	SeperateActor: boolean,
+	SeparateActor: boolean,
 	LowDetailPartWidth: number,
 	LowDetailPartHeight: number,
 }
