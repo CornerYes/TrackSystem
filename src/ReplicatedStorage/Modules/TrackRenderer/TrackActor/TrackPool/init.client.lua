@@ -1,4 +1,5 @@
 --!strict
+local benchmarks = {}
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TypeDefinitions = require(ReplicatedStorage.Modules.TrackRenderer.TypeDefinitions)
 local Common = require(script.Common)    
@@ -11,11 +12,13 @@ trackclass.__index = trackclass
 local function returnpoints(Wheels: { BasePart }): ({ Common.PrePoint  })
 	local Points: {Common.PrePoint} = {}
 	local WheelPoints = {}
+	local lastpos: vector? = nil
 	for index, wheel in ipairs(Wheels) do
 		local nextindex = index + 1
 		if nextindex > #Wheels then
 			nextindex = 1
 		end
+
 		local nextwheel = Wheels[nextindex]
 		local Type = wheel.Name:split("_")
 		local nexttype = nextwheel.Name:split("_")
@@ -29,39 +32,29 @@ local function returnpoints(Wheels: { BasePart }): ({ Common.PrePoint  })
 			Common.vector3tovector(rightvector)
 		)
 
-		if WheelPoints[nextindex] then
-			WheelPoints[nextindex].pos[2] = WheelPoints[nextindex].pos[1]
-			WheelPoints[nextindex].pos[1] = Pos2
-		else
-			if not nexttype[2] then
-				local dir = vector.normalize(Pos2 - Common.vector3tovector(nextwheel.Position))
-				local dot = vector.dot(dir, Common.vector3tovector(nextwheel.CFrame.UpVector))
-				if dot < 0 then
-					Pos2 = Common.vector3tovector(nextwheel.Position) - (Common.vector3tovector(nextwheel.CFrame.UpVector) * (nextwheel.Size.Z / 2))
-				else
-					Pos2 = Common.vector3tovector(nextwheel.Position) + (Common.vector3tovector(nextwheel.CFrame.UpVector) * (nextwheel.Size.Z / 2))
-				end
-			end
-
-			WheelPoints[nextindex] = {
-			pb = nextwheel,
-			pos = {Pos2}
-		}
-		end
 		if Type[2] then
-			if Type[2] == "curve" then
-				if not WheelPoints[index] then
-					WheelPoints[index] = {
-						pb = wheel,
-						pos = {Pos1}
-					}
-				else
-					WheelPoints[index].pb = wheel
-					table.insert(WheelPoints[index].pos, Pos1)
-				end
+			if lastpos then
+				print("yo")
+			else
+				local lastindex = (index - 1) % #Wheels
+				local lastwheel = Wheels[lastindex]
+				local _, lastpos2 = Common.getexternaltangentpoint(
+					Common.vector3tovector(lastwheel.Position),
+					lastwheel.Size.Z / 2,
+					Common.vector3tovector(wheel.Position),
+					wheel.Size.Z / 2,
+					Common.vector3tovector(rightvector)
+				)
+				Points[#Points + 1] = {
+					lastpos2,
+					Pos1,
+					wheel,
+				} :: Common.PrePoint
+				lastpos = Pos2
 			end
 		end
 	end
+
 	for _, PosTable in ipairs(WheelPoints) do
 		if #PosTable.pos > 1 then
 			Points[#Points + 1] = {
@@ -193,6 +186,7 @@ do
 	end
 
 	function trackclass:update(dt: number)
+		benchmarks.start5 = os.clock()
 		local temp: any = {}
 		
 		local bulkmove: {Parts: {BasePart}, CFrames: {CFrame}} = {
@@ -200,7 +194,6 @@ do
 			CFrames = {},
 		}
 
-		
 		if self.IsActive == true then
 			local CameraPosition = Camera.CFrame.Position
 			local distance = (CameraPosition - self.variables.MainPart.Position).Magnitude
@@ -235,11 +228,14 @@ do
 			end
 			
 			if not self.variables.LodActivated then
+				benchmarks.start1 = os.clock()
 				local Points = returnpoints(self.variables.Wheels)
+				benchmarks.end1 = os.clock()
+				benchmarks.start3 = os.clock()
 				local lengthtable, totallength = Common.getotallength(Points)
+				benchmarks.end3 = os.clock()
 				local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
 				local PartstoMake = math.clamp(numberofparts - #self.variables.Treads,0, 50)
-
 				local speed = (self.Speed :: number * dt) / totallength
 				self.variables.offset = (self.variables.offset :: number + speed :: number) % 1
 
@@ -249,13 +245,22 @@ do
 					 }
 					table.insert(self.variables.Treads, data)
 				end
-				
+				benchmarks.list = {}
+				benchmarks.start2 = os.clock()
 				for segment, tread : {trackpart: Model | string | BasePart} in ipairs(self.variables.Treads) do
 					if segment <= numberofparts then
+						local test = {
+							start1 = 0,
+							end1 = 0,
+						}
 						local t1 = ( ( (segment - 1) / numberofparts) + self.variables.offset) % 1
 						local t2 = ( (segment / numberofparts) + self.variables.offset) % 1
+
+						test.start1 = os.clock()
 						local Pos1, Face = Common.lerpthroughpoints(t1, Points, lengthtable, totallength)
 						local Pos2 = Common.lerpthroughpoints(t2, Points, lengthtable, totallength)
+						test.end1 = os.clock()
+						table.insert(benchmarks.list, test)
 						local midpoint = (Pos1 + Pos2) / 2
 						local targetCF = CFrame.lookAt(midpoint, Pos2, Face)
 						if typeof(tread.trackpart) ~= "string" then
@@ -275,6 +280,7 @@ do
 						table.remove(self.variables.Treads, segment)
 					end
 				end
+				benchmarks.end2 = os.clock()
 			end
 		end
 		task.synchronize()
@@ -312,11 +318,12 @@ do
 				value.Transparency = data
 			end
 		end
-
+		benchmarks.start4 = os.clock()
 		if #bulkmove.CFrames == #bulkmove.Parts then
 			workspace:BulkMoveTo(bulkmove.Parts, bulkmove.CFrames, Enum.BulkMoveMode.FireCFrameChanged)
 		end
-		
+		benchmarks.end4 = os.clock()
+		benchmarks.end5 = os.clock()
 	end
 end
 
@@ -401,3 +408,27 @@ Actor:BindToMessage("destroying", function(ID)
 		end
 	end
 end)
+
+while true do
+	if benchmarks["end1"] then
+		local ms1 = (benchmarks.end1 - benchmarks.start1) * 1000
+		local ms2 = (benchmarks.end2 - benchmarks.start2) * 1000
+		local ms3 = (benchmarks.end3 - benchmarks.start3) * 1000
+		local ms4 = (benchmarks.end4 - benchmarks.start4) * 1000
+		local ui = game.Players.LocalPlayer.PlayerGui.ScreenGui.Frame
+		ui.calc.Text = string.format("CalculatePoints: %.3f", ms1)
+		ui.length.Text = string.format("GetLength: %.3f ", ms3)
+		ui.set.Text = string.format("ApplyTread: %.3f ", ms2)
+		ui.ms4.Text = string.format("BulkMove: %.3f", ms4)
+		local added = 0
+		for _, v in ipairs(benchmarks.list) do
+			local times = (v.end1 - v.start1) * 1000
+			added = added + times
+		end
+		local avg = added / #benchmarks.list
+		ui.ltp.Text = string.format("LerpThroughPoints (AVG): %.6f", avg)
+		local ms5 = (benchmarks.end5 - benchmarks.start5) * 1000
+		ui.ms5.Text = string.format("update(): %.3f", ms5)
+	end
+	task.wait(0.5)
+end
