@@ -11,7 +11,6 @@ trackclass.__index = trackclass
 
 local function returnpoints(Wheels: { BasePart }): ({ Common.PrePoint  })
 	local Points: {Common.PrePoint} = {}
-	local WheelPoints = {}
 	local lastpos: vector? = nil
 	for index, wheel in ipairs(Wheels) do
 		local nextindex = index + 1
@@ -34,11 +33,19 @@ local function returnpoints(Wheels: { BasePart }): ({ Common.PrePoint  })
 
 		if Type[2] then
 			if lastpos then
-				print("yo")
+				Points[#Points + 1] = {
+					lastpos,
+					Pos1,
+					wheel,
+				} :: Common.PrePoint
+				lastpos = Pos2
 			else
-				local lastindex = (index - 1) % #Wheels
+				local lastindex = index - 1
+				if lastindex < 1 then
+					lastindex = #Wheels
+				end
 				local lastwheel = Wheels[lastindex]
-				local _, lastpos2 = Common.getexternaltangentpoint(
+				local _, pos2 = Common.getexternaltangentpoint(
 					Common.vector3tovector(lastwheel.Position),
 					lastwheel.Size.Z / 2,
 					Common.vector3tovector(wheel.Position),
@@ -46,30 +53,26 @@ local function returnpoints(Wheels: { BasePart }): ({ Common.PrePoint  })
 					Common.vector3tovector(rightvector)
 				)
 				Points[#Points + 1] = {
-					lastpos2,
+					pos2,
 					Pos1,
 					wheel,
 				} :: Common.PrePoint
-				lastpos = Pos2
 			end
 		end
-	end
 
-	for _, PosTable in ipairs(WheelPoints) do
-		if #PosTable.pos > 1 then
-			Points[#Points + 1] = {
-				PosTable.pos[1],
-				PosTable.pos[2],
-				PosTable.pb,
-			} :: Common.PrePoint
-		else
-			for _, Position in ipairs(PosTable.pos) do
-				table.insert(Points, {Position, PosTable.pb} :: Common.PrePoint)
+		if not nexttype[2] then
+			table.insert(Points, {Pos2, wheel} :: Common.PrePoint)
+		end
+		if index == #Wheels then
+			local firstpoint = Points[1]
+			if #firstpoint > 2 then
+				table.insert(Points, {firstpoint[1], firstpoint[3]} )
+			else
+				table.insert(Points, {firstpoint[1], firstpoint[2]} )
 			end
 		end
+		lastpos = Pos2
 	end
-
-	table.insert(Points,{WheelPoints[1].pos[1], WheelPoints[1].pb} :: Common.PrePoint)
 	return Points
 end
 

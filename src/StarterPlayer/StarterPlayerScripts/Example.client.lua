@@ -9,7 +9,7 @@ for _, v: Model in ipairs(workspace.Thing:GetChildren()) do
     if v:IsA("Model") then
 
         local tracksettings = TrackRenderer.newsettings()
-        tracksettings.TrackLength = 0.5
+        tracksettings.TrackLength = 0.65
         tracksettings.TrackModel = game.ReplicatedStorage.Tracks.SimpleTrackThin
         tracksettings.SeparateActor = false
         tracksettings.LowDetailPartWidth = 3
