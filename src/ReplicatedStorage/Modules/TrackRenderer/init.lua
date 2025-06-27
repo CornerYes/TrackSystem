@@ -1,7 +1,7 @@
 --!strict
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local TypeDef = require(script.TypeDefinitions)
+local OrigActor = script.TrackActor
+local TypeDef = require(OrigActor.Main.TypeDefinitions)
 local module = {}
 module.__index = module
 
