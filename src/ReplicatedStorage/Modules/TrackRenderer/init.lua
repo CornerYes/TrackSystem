@@ -1,7 +1,10 @@
 --!strict
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local OrigActor = script.TrackActor
+
 local TypeDef = require(OrigActor.Main.TypeDefinitions)
+local track = require(OrigActor.Main)
+
 local module = {}
 module.__index = module
 
@@ -10,9 +13,6 @@ local uidcount = 0
 local Folder = Instance.new("Folder")
 Folder.Name = "TrackRenders"
 Folder.Parent = game.ReplicatedFirst
-
-local Actor = script.TrackActor
-Actor.Parent = game.ReplicatedFirst
 
 local function uid()
 	uidcount += 1
@@ -29,12 +29,15 @@ function module.newsettings(): TypeDef.TrackSettings
 	}
 end
 
-function module.new(track_settings: TypeDef.TrackSettings, Wheels: {Instance})
-	local actortouse = Actor
+function module.new(track_settings: TypeDef.TrackSettings, Wheels: { Instance })
+	local actortouse = nil
+	local trackclass = nil
 
 	if track_settings.SeparateActor then
-		actortouse = Actor:Clone()
+		actortouse = OrigActor:Clone()
 		actortouse.Parent = Folder
+	else
+		trackclass = track.new(track_settings)
 	end
 
 	local object = {
@@ -42,14 +45,23 @@ function module.new(track_settings: TypeDef.TrackSettings, Wheels: {Instance})
 		Speed = 0,
 		LODDistance = 100,
 		ID = uid(),
-		trackActor = actortouse,
+		actor = actortouse,
+		event = nil,
+		track = trackclass,
 	}
 
 	task.spawn(function()
-		if track_settings.SeparateActor then
-			 task.wait()
+		if actortouse then
+			if track_settings.SeparateActor then
+				task.wait()
+			end
+			object.actor:SendMessage("Init", object.ID, track_settings, Wheels)
+		else
+			object.track:Init(Wheels)
+			object.event = game:GetService("RunService").RenderStepped:Connect(function(dt)
+				object.track:update(dt, false, {})
+			end)
 		end
-		object.trackActor:SendMessage("Init", object.ID, track_settings, Wheels)
 	end)
 
 	setmetatable(object, module)
@@ -57,31 +69,41 @@ function module.new(track_settings: TypeDef.TrackSettings, Wheels: {Instance})
 end
 
 function module:UpdatePool_PrivateFunction(data)
-	self.trackActor:SendMessage("change", self.ID, data)
+	if self.actor then
+		self.actor:SendMessage("change", self.ID, data)
+	else
+		self.track:dataupdate(data)
+	end
 end
 
 function module:SetSpeed(number)
 	self.Speed = number
-	self:UpdatePool_PrivateFunction({Speed = number})
+	self:UpdatePool_PrivateFunction({ Speed = number })
 end
 
 function module:SetLODDistance(number)
 	self.LODDistance = number
-	self:UpdatePool_PrivateFunction({LODDistance = number})
+	self:UpdatePool_PrivateFunction({ LODDistance = number })
 end
 
 function module:Render()
 	self.IsActive = true
-	self:UpdatePool_PrivateFunction({IsActive = true})
+	self:UpdatePool_PrivateFunction({ IsActive = true })
 end
 
 function module:StopRendering()
 	self.IsActive = false
-	self:UpdatePool_PrivateFunction({IsActive = false})
+	self:UpdatePool_PrivateFunction({ IsActive = false })
 end
 
 function module:Destroy()
-	self.trackActor:SendMessage("destroying", self.ID)
+	if self.actor then
+		self.actor:SendMessage("destroying", self.ID)
+	else
+		if self.event then
+			self.event:Disconnect()
+		end
+	end
 end
 
 return module
