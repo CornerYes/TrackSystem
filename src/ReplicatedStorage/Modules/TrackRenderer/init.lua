@@ -59,7 +59,7 @@ function module.new(track_settings: TypeDef.TrackSettings, Wheels: { Instance })
 		else
 			object.track:Init(Wheels)
 			object.event = game:GetService("RunService").RenderStepped:Connect(function(dt)
-				object.track:update(dt, false, {})
+				object.track:update(dt, false)
 			end)
 		end
 	end)
@@ -103,6 +103,7 @@ function module:Destroy()
 		if self.event then
 			self.event:Disconnect()
 		end
+		self.track:destroy()
 	end
 end
 

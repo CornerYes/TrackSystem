@@ -1,5 +1,4 @@
 --!strict
-local benchmarks: any = {}
 local TypeDefinitions = require(script.Parent.Main.TypeDefinitions)
 local trackclass = require(script.Parent.Main)
 local Actor = script.Parent
@@ -10,7 +9,7 @@ Actor:BindToMessage("Init", function(ID, track_settings: TypeDefinitions.TrackSe
 	activetracks[ID] = track
 	track:Init(Wheels)
 	track.Event = game:GetService("RunService").RenderStepped:ConnectParallel(function(dt)
-		benchmarks = track:update(dt, true, benchmarks)
+		track:update(dt, true)
 	end)
 end) 
 
@@ -86,27 +85,3 @@ Actor:BindToMessage("destroying", function(ID)
 		end
 	end
 end)
-
-while true do
-	if benchmarks["end1"] then
-		local ms1 = (benchmarks.end1 - benchmarks.start1) * 1000
-		local ms2 = (benchmarks.end2 - benchmarks.start2) * 1000
-		local ms3 = (benchmarks.end3 - benchmarks.start3) * 1000
-		local ms4 = (benchmarks.end4 - benchmarks.start4) * 1000
-		local ui = game.Players.LocalPlayer.PlayerGui.ScreenGui.Frame
-		ui.calc.Text = string.format("CalculatePoints: %.3f", ms1)
-		ui.length.Text = string.format("GetLength: %.3f ", ms3)
-		ui.set.Text = string.format("ApplyTread: %.3f ", ms2)
-		ui.ms4.Text = string.format("BulkMove: %.3f", ms4)
-		local added = 0
-		for _, v in ipairs(benchmarks.list) do
-			local times = (v.end1 - v.start1) * 1000
-			added = added + times
-		end
-		local avg = added / #benchmarks.list
-		ui.ltp.Text = string.format("LerpThroughPoints (AVG): %.6f", avg)
-		local ms5 = (benchmarks.end5 - benchmarks.start5) * 1000
-		ui.ms5.Text = string.format("update(): %.3f", ms5)
-	end
-	task.wait(0.5)
-end

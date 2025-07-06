@@ -179,8 +179,7 @@ function trackclass:Init(WheelParts: { BasePart })
 
 			local pos2 = nextpoint[1] :: vector
 			local midpoint = (p2 + pos2) / 2
-			local targetcf =
-				CFrame.lookAt(Common.vectortovector3(midpoint), Common.vectortovector3(pos2), wheel.CFrame.RightVector)
+			local targetcf = CFrame.lookAt(Common.vectortovector3(midpoint), Common.vectortovector3(pos2), wheel.CFrame.RightVector)
 			local LODPart = game.ReplicatedStorage.Tracks.LODPart:Clone() :: BasePart
 			LODPart.Parent = workspace.Terrain
 			LODPart.CFrame = targetcf
@@ -213,8 +212,7 @@ function trackclass:Init(WheelParts: { BasePart })
 	end
 end
 
-function trackclass:update(dt: number, parallel: boolean, benchmarks: any)
-	benchmarks.start5 = os.clock()
+function trackclass:update(dt: number, parallel: boolean)
 	local temp: any = {}
 
 	local bulkmove: { Parts: { BasePart }, CFrames: { CFrame } } = {
@@ -255,12 +253,8 @@ function trackclass:update(dt: number, parallel: boolean, benchmarks: any)
 		end
 
 		if not self.variables.LodActivated then
-			benchmarks.start1 = os.clock()
 			local Points = returnpoints(self.variables.Wheels)
-			benchmarks.end1 = os.clock()
-			benchmarks.start3 = os.clock()
 			local lengthtable, totallength = Common.getotallength(Points)
-			benchmarks.end3 = os.clock()
 			local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
 			local PartstoMake = math.clamp(numberofparts - #self.variables.Treads, 0, 50)
 			local speed = (self.Speed :: number * dt) / totallength
@@ -272,22 +266,14 @@ function trackclass:update(dt: number, parallel: boolean, benchmarks: any)
 				}
 				table.insert(self.variables.Treads, data)
 			end
-			benchmarks.list = {}
-			benchmarks.start2 = os.clock()
 			for segment, tread: { trackpart: Model | string | BasePart } in ipairs(self.variables.Treads) do
 				if segment <= numberofparts then
-					--[[local test = {
-							start1 = 0,
-							end1 = 0,
-						}]]
+
 					local t1 = (((segment - 1) / numberofparts) + self.variables.offset) % 1
 					local t2 = ((segment / numberofparts) + self.variables.offset) % 1
 
-					--test.start1 = os.clock()
 					local Pos1, Face = Common.lerpthroughpoints(t1, Points, lengthtable, totallength)
 					local Pos2 = Common.lerpthroughpoints(t2, Points, lengthtable, totallength)
-					--test.end1 = os.clock()
-					--table.insert(benchmarks.list, test)
 					local midpoint = (Pos1 + Pos2) / 2
 					local targetCF = CFrame.lookAt(midpoint, Pos2, Face)
 					if typeof(tread.trackpart) ~= "string" then
@@ -307,7 +293,6 @@ function trackclass:update(dt: number, parallel: boolean, benchmarks: any)
 					table.remove(self.variables.Treads, segment)
 				end
 			end
-			benchmarks.end2 = os.clock()
 		end
 	end
 	if parallel then
@@ -343,13 +328,9 @@ function trackclass:update(dt: number, parallel: boolean, benchmarks: any)
 			value.Transparency = data
 		end
 	end
-	benchmarks.start4 = os.clock()
 	if #bulkmove.CFrames == #bulkmove.Parts then
 		workspace:BulkMoveTo(bulkmove.Parts, bulkmove.CFrames, Enum.BulkMoveMode.FireCFrameChanged)
 	end
-	benchmarks.end4 = os.clock()
-	benchmarks.end5 = os.clock()
-	return benchmarks
 end
 
 function trackclass:dataupdate(data)
@@ -395,6 +376,16 @@ function trackclass:dataupdate(data)
 				else
 					trackpart.Transparency = 1
 				end
+			end
+		end
+	end
+end
+
+function trackclass:destroy()
+	for _, v in pairs(self.variables.Treads) do
+		if v.trackpart then
+			if typeof(v.trackpart) ~= "string" then
+				v.trackpart:Destroy()
 			end
 		end
 	end
