@@ -1,3 +1,4 @@
+--!strict
 local trackclass = {}
 trackclass.__index = trackclass
 local Camera = workspace.CurrentCamera
@@ -74,25 +75,25 @@ end
 function trackclass.new(track_settings: TypeDefinitions.TrackSettings)
 	local object = {
 		IsActive = false,
-		Speed = 0 :: number,
+		Speed = 0,
 		LODDistance = 100,
 		track_settings = track_settings,
 		Event = nil :: RBXScriptConnection?,
 		variables = {
-			IsAModel = track_settings.TrackModel:IsA("Model") :: boolean,
-			offset = 0 :: number,
-			Wheels = {} :: { BasePart },
-			Treads = {} :: { { trackpart: Instance | BasePart | Model | string } },
+			IsAModel = track_settings.TrackModel:IsA("Model"),
+			offset = 0,
+			Wheels = {},
+			Treads = {},
 			MainPart = nil :: BasePart?,
-			LODParts = {} :: { BasePart },
-			LodActivated = false :: boolean,
+			LODParts = {},
+			LodActivated = false,
 		},
 	}
 	setmetatable(object, trackclass)
 	return object
 end
 
-function trackclass:Init(WheelParts: { BasePart })
+function trackclass:Init(WheelParts: any)
 	for _, wheel in ipairs(WheelParts) do
 		if wheel:IsA("BasePart") then
 			if wheel.Name == "Main" then
@@ -313,7 +314,7 @@ function trackclass:update(dt: number, parallel: boolean)
 				else
 					table.insert(bulkmove.Parts, TrackPart :: BasePart)
 				end
-				local treadlist = self.variables.Treads :: { { trackpart: Instance | BasePart | Model | string } }
+				local treadlist = self.variables.Treads
 				treadlist[segment].trackpart = TrackPart
 			elseif typeof(data[1]) == "string" then
 				if data[1] == "destroy" then
@@ -347,7 +348,7 @@ function trackclass:dataupdate(data)
 			end
 		end
 		for _, tread in ipairs(self.variables.Treads) do
-			local trackpart = tread.trackpart :: Model | BasePart
+			local trackpart = tread.trackpart
 			if typeof(trackpart) ~= "string" then
 				if trackpart:IsA("Model") then
 					for _, parts in ipairs(trackpart:GetDescendants()) do
@@ -365,7 +366,7 @@ function trackclass:dataupdate(data)
 			lodtread.Transparency = 1
 		end
 		for _, tread in ipairs(self.variables.Treads) do
-			local trackpart = tread.trackpart :: Model | BasePart
+			local trackpart = tread.trackpart
 			if typeof(trackpart) ~= "string" then
 				if trackpart:IsA("Model") then
 					for _, parts in ipairs(trackpart:GetDescendants()) do
