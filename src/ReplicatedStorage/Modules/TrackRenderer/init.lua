@@ -26,6 +26,7 @@ function module.newsettings(): TypeDef.TrackSettings
 		SeparateActor = false,
 		LowDetailPartWidth = 1,
 		LowDetailPartHeight = 1,
+		MiddleTrack = nil,
 	}
 end
 

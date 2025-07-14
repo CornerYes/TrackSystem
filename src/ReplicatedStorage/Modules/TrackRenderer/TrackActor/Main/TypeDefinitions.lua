@@ -5,6 +5,7 @@ export type TrackSettings = {
 	SeparateActor: boolean,
 	LowDetailPartWidth: number,
 	LowDetailPartHeight: number,
+	MiddleTrack: Model? | BasePart?,
 }
 
 return {}
