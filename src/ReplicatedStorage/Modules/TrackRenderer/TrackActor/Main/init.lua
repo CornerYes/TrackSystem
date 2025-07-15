@@ -131,6 +131,11 @@ function trackclass:Init(WheelParts: any)
 			MiddleTrack.Parent = workspace.Terrain
 			MiddleTrack.Name = "middletrack_" .. tostring(segment)
 			self.variables.TreadConnector[TrackPart] = MiddleTrack
+			for _, v in ipairs(MiddleTrack:GetDescendants()) do
+				if v:IsA("BasePart") then
+					v.Transparency = 1
+				end
+			end
 		end
 	end
 
@@ -318,7 +323,8 @@ function trackclass:update(dt: number, parallel: boolean)
 
 							local midpoint2 = (Pos2 + Pos3) / 2
 							local middlepoint = (midpoint + midpoint2) / 2
-							temp[tread.trackpart] = { targetCF, segment, {middlepoint, Pos3, Face2} } :: { CFrame | number | {Vector3} }
+							temp[tread.trackpart] =
+								{ targetCF, segment, { middlepoint, Pos3, Face2 } } :: { CFrame | number | { Vector3 } }
 						end
 					end
 					table.insert(bulkmove.CFrames, targetCF)
@@ -409,6 +415,15 @@ function trackclass:dataupdate(data)
 				end
 			end
 		end
+		if self.track_settings.MiddleTrack then
+			for _, middletrack in pairs(self.variables.TreadConnector) do
+				for _, parts in ipairs(middletrack:GetDescendants()) do
+					if parts:IsA("BasePart") then
+						parts.Transparency = 0
+					end
+				end
+			end
+		end
 	else
 		for _, lodtread in ipairs(self.variables.LODParts) do
 			lodtread.Transparency = 1
@@ -427,6 +442,17 @@ function trackclass:dataupdate(data)
 				end
 			end
 		end
+
+		if self.track_settings.MiddleTrack then
+			for _, middletrack in pairs(self.variables.TreadConnector) do
+				for _, parts in ipairs(middletrack:GetDescendants()) do
+					if parts:IsA("BasePart") then
+						parts.Transparency = 1
+					end
+				end
+			end
+		end
+		
 	end
 end
 
