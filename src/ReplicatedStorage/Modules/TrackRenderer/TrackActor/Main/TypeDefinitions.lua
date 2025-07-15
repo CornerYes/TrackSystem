@@ -2,10 +2,10 @@
 export type TrackSettings = {
 	TrackModel: Model | BasePart,
 	TrackLength: number,
-	SeparateActor: boolean,
+	ParallelLua: boolean,
 	LowDetailPartWidth: number,
 	LowDetailPartHeight: number,
-	MiddleTrack: Model?,
+	MiddleTrack: any,
 }
 
 return {}

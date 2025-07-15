@@ -388,7 +388,7 @@ function trackclass:update(dt: number, parallel: boolean)
 	end
 end
 
-function trackclass:dataupdate(data)
+function trackclass:dataupdate(data: any)
 	for name, value in pairs(data) do
 		if self[name] ~= nil then
 			self[name] = value
@@ -452,7 +452,7 @@ function trackclass:dataupdate(data)
 				end
 			end
 		end
-		
+
 	end
 end
 
