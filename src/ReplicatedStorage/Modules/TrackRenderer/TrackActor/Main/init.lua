@@ -84,7 +84,7 @@ function trackclass.new(track_settings: TypeDefinitions.TrackSettings)
 			offset = 0,
 			Wheels = {},
 			Treads = {},
-			TreadConnector = {},
+			MiddleTracks = {},
 			MainPart = nil :: BasePart?,
 			LODParts = {},
 			LodActivated = false,
@@ -130,7 +130,7 @@ function trackclass:Init(WheelParts: any)
 			local MiddleTrack = self.track_settings.MiddleTrack:Clone()
 			MiddleTrack.Parent = workspace.Terrain
 			MiddleTrack.Name = "middletrack_" .. tostring(segment)
-			self.variables.TreadConnector[TrackPart] = MiddleTrack
+			self.variables.MiddleTracks[TrackPart] = MiddleTrack
 			for _, v in ipairs(MiddleTrack:GetDescendants()) do
 				if v:IsA("BasePart") then
 					v.Transparency = 1
@@ -237,6 +237,11 @@ function trackclass:update(dt: number, parallel: boolean)
 		CFrames = {},
 	}
 
+	local bulkmove_middletread: { Parts: { BasePart }, CFrames: { CFrame } } = {
+		Parts = {},
+		CFrames = {},
+	}
+
 	if self.IsActive == true then
 		local CameraPosition = Camera.CFrame.Position
 		local distance = (CameraPosition - self.variables.MainPart.Position).Magnitude
@@ -248,15 +253,29 @@ function trackclass:update(dt: number, parallel: boolean)
 				for _, lodtread in ipairs(self.variables.LODParts) do
 					temp[lodtread] = 0
 				end
-				for _, tread in ipairs(self.variables.Treads) do
-					if self.variables.IsAModel then
-						local model = tread.trackpart :: Model
-						table.insert(bulkmove.Parts, model.PrimaryPart :: BasePart)
-					else
-						table.insert(bulkmove.Parts, tread.trackpart :: BasePart)
-					end
 
-					table.insert(bulkmove.CFrames, CFrame.new(0, -50, 0))
+				if self.track_settings.MiddleTrack then
+					for tread: any, middletread in pairs(self.variables.MiddleTracks) do
+						if self.variables.IsAModel then
+							table.insert(bulkmove.Parts, tread.Main :: BasePart)
+						else
+							table.insert(bulkmove.Parts, tread :: BasePart)
+						end
+						table.insert(bulkmove.CFrames, CFrame.new(0, -50, 0))
+
+						table.insert(bulkmove.Parts, middletread.Main :: BasePart)
+						table.insert(bulkmove.CFrames, CFrame.new(0, -50, 0))
+					end
+				else
+					for _, tread: { trackpart: Model | string | BasePart } in ipairs(self.variables.Treads) do
+						if self.variables.IsAModel then
+							local model = tread.trackpart :: any
+							table.insert(bulkmove.Parts, model.Main :: BasePart)
+						else
+							table.insert(bulkmove.Parts, tread.trackpart :: BasePart)
+						end
+						table.insert(bulkmove.CFrames, CFrame.new(0, -50, 0))
+					end
 				end
 			end
 		else
@@ -294,8 +313,8 @@ function trackclass:update(dt: number, parallel: boolean)
 					local targetCF = CFrame.lookAt(midpoint, Pos2, Face)
 					if typeof(tread.trackpart) ~= "string" then
 						if self.variables.IsAModel then
-							local model = tread.trackpart :: Model
-							table.insert(bulkmove.Parts, model.PrimaryPart :: BasePart)
+							local model = tread.trackpart :: any
+							table.insert(bulkmove.Parts, model.Main :: BasePart)
 						elseif typeof(tread.trackpart) == "string" and tread.trackpart == "create" then
 							local part = tread.trackpart :: BasePart
 							table.insert(bulkmove.Parts, part :: BasePart)
@@ -309,10 +328,10 @@ function trackclass:update(dt: number, parallel: boolean)
 							local middlepoint = (midpoint + midpoint2) / 2
 
 							local middlecf = CFrame.lookAt(middlepoint, Pos3, Face2)
-							local middletrack = self.variables.TreadConnector[tread.trackpart]
+							local middletrack = self.variables.MiddleTracks[tread.trackpart]
 
-							table.insert(bulkmove.Parts, middletrack.PrimaryPart)
-							table.insert(bulkmove.CFrames, middlecf)
+							table.insert(bulkmove_middletread.Parts, middletrack.Main)
+							table.insert(bulkmove_middletread.CFrames, middlecf)
 						end
 					else
 						if not self.track_settings.MiddleTrack then
@@ -352,14 +371,14 @@ function trackclass:update(dt: number, parallel: boolean)
 					local MiddleTrack = self.track_settings.MiddleTrack:Clone()
 					MiddleTrack.Parent = workspace.Terrain
 					MiddleTrack.Name = "middletrack_" .. tostring(segment)
-					self.variables.TreadConnector[TrackPart] = MiddleTrack
-					table.insert(bulkmove.Parts, MiddleTrack.PrimaryPart :: BasePart)
-					table.insert(bulkmove.CFrames, CFrame.lookAt(middlecf[1], middlecf[2], middlecf[3]))
+					self.variables.MiddleTracks[TrackPart] = MiddleTrack
+					table.insert(bulkmove_middletread.Parts, MiddleTrack.Main :: BasePart)
+					table.insert(bulkmove_middletread.CFrames, CFrame.lookAt(middlecf[1], middlecf[2], middlecf[3]))
 				end
 
 				if self.variables.IsAModel then
-					local model = TrackPart :: Model
-					table.insert(bulkmove.Parts, model.PrimaryPart :: BasePart)
+					local model = TrackPart :: any
+					table.insert(bulkmove.Parts, model.Main :: BasePart)
 				else
 					table.insert(bulkmove.Parts, TrackPart :: BasePart)
 				end
@@ -370,8 +389,8 @@ function trackclass:update(dt: number, parallel: boolean)
 				if data[1] == "destroy" then
 					if typeof(value) ~= "string" then
 						value:Destroy()
-						if self.variables.TreadConnector[value] then
-							local middletrack = self.variables.TreadConnector[value]
+						if self.variables.MiddleTracks[value] then
+							local middletrack = self.variables.MiddleTracks[value]
 							middletrack:Destroy()
 						end
 					else
@@ -385,6 +404,14 @@ function trackclass:update(dt: number, parallel: boolean)
 	end
 	if #bulkmove.CFrames == #bulkmove.Parts then
 		workspace:BulkMoveTo(bulkmove.Parts, bulkmove.CFrames, Enum.BulkMoveMode.FireCFrameChanged)
+	end
+
+	if #bulkmove_middletread.CFrames == #bulkmove_middletread.Parts then
+		workspace:BulkMoveTo(
+			bulkmove_middletread.Parts,
+			bulkmove_middletread.CFrames,
+			Enum.BulkMoveMode.FireCFrameChanged
+		)
 	end
 end
 
@@ -416,7 +443,7 @@ function trackclass:dataupdate(data: any)
 			end
 		end
 		if self.track_settings.MiddleTrack then
-			for _, middletrack in pairs(self.variables.TreadConnector) do
+			for _, middletrack in pairs(self.variables.MiddleTracks) do
 				for _, parts in ipairs(middletrack:GetDescendants()) do
 					if parts:IsA("BasePart") then
 						parts.Transparency = 0
@@ -444,7 +471,7 @@ function trackclass:dataupdate(data: any)
 		end
 
 		if self.track_settings.MiddleTrack then
-			for _, middletrack in pairs(self.variables.TreadConnector) do
+			for _, middletrack in pairs(self.variables.MiddleTracks) do
 				for _, parts in ipairs(middletrack:GetDescendants()) do
 					if parts:IsA("BasePart") then
 						parts.Transparency = 1
@@ -452,7 +479,6 @@ function trackclass:dataupdate(data: any)
 				end
 			end
 		end
-
 	end
 end
 
@@ -462,6 +488,18 @@ function trackclass:destroy()
 			if typeof(v.trackpart) ~= "string" then
 				v.trackpart:Destroy()
 			end
+		end
+	end
+
+	for _, v in pairs(self.variables.MiddleTracks) do
+		if v then
+			v:Destroy()
+		end
+	end
+
+	for _, lodpart in ipairs(self.variables.LODParts) do
+		if lodpart then
+			lodpart:Destroy()
 		end
 	end
 end
