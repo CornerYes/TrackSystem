@@ -211,7 +211,7 @@ function trackclass:Init(WheelParts: any)
 					Common.vectortovector3(pos2),
 					wheel.CFrame.RightVector
 				)
-				local LODPart = game.ReplicatedStorage.Tracks.LODPart:Clone() :: BasePart
+				local LODPart = script.LODPart:Clone() :: BasePart
 				LODPart.Parent = workspace.Terrain
 				LODPart.CFrame = targetcf
 				LODPart.Size = Vector3.new(
@@ -227,7 +227,7 @@ function trackclass:Init(WheelParts: any)
 			local midpoint = (p2 + pos2) / 2
 			local targetcf =
 				CFrame.lookAt(Common.vectortovector3(midpoint), Common.vectortovector3(pos2), wheel.CFrame.RightVector)
-			local LODPart = game.ReplicatedStorage.Tracks.LODPart:Clone() :: BasePart
+			local LODPart = script.LODPart:Clone() :: BasePart
 			LODPart.Parent = workspace.Terrain
 			LODPart.CFrame = targetcf
 			LODPart.Size = Vector3.new(
@@ -341,6 +341,7 @@ function trackclass:update(dt: number, parallel: boolean)
 					table.remove(self.variables.Treads, #self.variables.Treads)
 				end
 			end
+			
 			for segment, tread: { trackpart: Model | string | BasePart } in ipairs(self.variables.Treads) do
 				local t1 = (((segment - 1) / numberofparts) + self.variables.offset) % 1
 				local t2 = ((segment / numberofparts) + self.variables.offset) % 1
