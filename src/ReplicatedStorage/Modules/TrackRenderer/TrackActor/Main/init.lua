@@ -105,7 +105,7 @@ function trackclass.new(track_settings: TypeDefinitions.TrackSettings)
 		track_settings = track_settings,
 		Event = nil :: RBXScriptConnection?,
 		variables = {
-			IsAModel = track_settings.TrackModel:IsA("Model"),
+			IsAModel = false,
 			offset = 0,
 			Wheels = {},
 			Treads = {},
@@ -115,6 +115,11 @@ function trackclass.new(track_settings: TypeDefinitions.TrackSettings)
 			LodActivated = false,
 		},
 	}
+
+	if track_settings.TrackModel then
+		object.variables.IsAModel = track_settings.TrackModel:IsA("Model")
+	end
+
 	setmetatable(object, trackclass)
 	return object
 end
@@ -136,6 +141,11 @@ function trackclass:Init(WheelParts: any)
 			self.variables.Wheels[currentindex] = wheel
 		end
 	end
+
+	if self.variables.MainPart == nil then
+		error("missing: Main: BasePart")
+	end
+
 	local Points = returnpoints(self.variables.Wheels)
 	local _, totallength = Common.getotallength(Points)
 	local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
@@ -211,7 +221,7 @@ function trackclass:Init(WheelParts: any)
 					Common.vectortovector3(pos2),
 					wheel.CFrame.RightVector
 				)
-				local LODPart = script.LODPart:Clone() :: BasePart
+				local LODPart = Common.createpart() :: BasePart
 				LODPart.Parent = workspace.Terrain
 				LODPart.CFrame = targetcf
 				LODPart.Size = Vector3.new(
@@ -227,7 +237,7 @@ function trackclass:Init(WheelParts: any)
 			local midpoint = (p2 + pos2) / 2
 			local targetcf =
 				CFrame.lookAt(Common.vectortovector3(midpoint), Common.vectortovector3(pos2), wheel.CFrame.RightVector)
-			local LODPart = script.LODPart:Clone() :: BasePart
+			local LODPart = Common.createpart() :: BasePart
 			LODPart.Parent = workspace.Terrain
 			LODPart.CFrame = targetcf
 			LODPart.Size = Vector3.new(
@@ -245,7 +255,7 @@ function trackclass:Init(WheelParts: any)
 			local midpoint = (p1 + pos2) / 2
 			local targetcf =
 				CFrame.lookAt(Common.vectortovector3(midpoint), Common.vectortovector3(pos2), wheel.CFrame.RightVector)
-			local LODPart = game.ReplicatedStorage.Tracks.LODPart:Clone() :: BasePart
+			local LODPart = Common.createpart() :: BasePart
 			LODPart.Parent = workspace.Terrain
 			LODPart.CFrame = targetcf
 			LODPart.Size = Vector3.new(

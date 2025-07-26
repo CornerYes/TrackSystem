@@ -27,6 +27,18 @@ function module.getvectorintersection(pos1, d1, pos2, d2, over): vector?
 	return intersection
 end
 
+function module.createpart()
+	local part = Instance.new("Part")
+	part.Anchored = false
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.Transparency = 1
+	part.Parent = workspace.Terrain
+	part.Color = Color3.new(0,0,0)
+	return part
+end
+
 function module.getexternaltangentpoint(c1pos: vector, radi1: number, c2pos: vector, radi2: number, rv: vector): (vector, vector)
 	local dir = c1pos - c2pos
 	local distance = vector.magnitude(dir)

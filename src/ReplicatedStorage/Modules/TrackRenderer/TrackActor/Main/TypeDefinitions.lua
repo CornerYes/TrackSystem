@@ -1,6 +1,6 @@
 
 export type TrackSettings = {
-	TrackModel: Model | BasePart,
+	TrackModel: Model? | BasePart?,
 	TrackLength: number,
 	ParallelLua: boolean,
 	LowDetailPartWidth: number,

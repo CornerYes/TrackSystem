@@ -21,7 +21,7 @@ end
 
 function module.newsettings(): TypeDef.TrackSettings
 	return {
-		TrackModel = ReplicatedStorage.Tracks.Brick,
+		TrackModel = nil,
 		TrackLength = 100,
 		ParallelLua = false,
 		LowDetailPartWidth = 1,
@@ -49,6 +49,7 @@ function module.new(track_settings: TypeDef.TrackSettings, Wheels: { Instance })
 		actor = actortouse,
 		event = nil,
 		track = trackclass,
+		Wheels = Wheels,
 	}
 
 	task.spawn(function()
