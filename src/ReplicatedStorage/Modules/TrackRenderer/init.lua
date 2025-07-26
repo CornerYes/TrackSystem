@@ -108,4 +108,8 @@ function module:Destroy()
 	end
 end
 
+function module.version()
+	return "1.0.0"
+end
+
 return module
