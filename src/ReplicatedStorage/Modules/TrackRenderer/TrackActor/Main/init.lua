@@ -547,6 +547,10 @@ function trackclass:destroy()
 			lodpart:Destroy()
 		end
 	end
+	table.clear(self.variables.Treads)
+	table.clear(self.variables.MiddleTracks)
+	table.clear(self.variables.LODParts)
+
 end
 
 return trackclass

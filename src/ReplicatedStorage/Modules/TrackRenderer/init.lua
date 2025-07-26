@@ -102,6 +102,7 @@ function module:Destroy()
 	else
 		if self.event then
 			self.event:Disconnect()
+			self.event = nil :: any
 		end
 		self.track:destroy()
 	end
