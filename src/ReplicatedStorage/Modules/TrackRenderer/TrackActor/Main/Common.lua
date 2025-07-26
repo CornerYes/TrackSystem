@@ -8,6 +8,25 @@ export type PrePoint = {
 	vector | BasePart
 }
 
+function module.getvectorintersection(pos1, d1, pos2, d2, over): vector?
+	local cross = vector.cross(d1, d2)
+	local dot = vector.dot(d1, d2)
+	if vector.magnitude(cross) < 1e-6 then
+		return nil
+	end
+
+	if over == nil then
+		if dot > 0.9  then
+			return nil
+		end
+	end
+
+	local p1p2 = pos2 - pos1
+	local t = vector.magnitude(vector.cross(p1p2, d2)) / vector.magnitude(cross)
+	local intersection = pos1 + d1 * t
+	return intersection
+end
+
 function module.getexternaltangentpoint(c1pos: vector, radi1: number, c2pos: vector, radi2: number, rv: vector): (vector, vector)
 	local dir = c1pos - c2pos
 	local distance = vector.magnitude(dir)
@@ -46,6 +65,18 @@ function module.createadornment(name: string, raidus: number, CF: CFrame, color:
 	SphereAdornment.Transparency = 0.5
 	SphereAdornment.AlwaysOnTop = true
 	return SphereAdornment
+end
+
+function module.createarrow(name: string, pos, dir, color: Color3, length): BasePart
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Size = Vector3.new(0.1,0.1,length)
+	part.CFrame = CFrame.new(pos, pos + dir)
+	part.Color = color
+	part.Anchored = true
+	part.CanCollide = false
+	part.Parent = workspace.Terrain
+	return part
 end
 
 function module.vector3tovector(v: Vector3): vector

@@ -5,6 +5,30 @@ local Camera = workspace.CurrentCamera
 local Common = require(script.Common)
 local TypeDefinitions = require(script.TypeDefinitions)
 
+--for debug purposes
+local function make(name, pos, color)
+	if workspace.Terrain:FindFirstChild(name) then
+		local adore: SphereHandleAdornment = workspace.Terrain[name]
+		adore.CFrame = pos
+	else
+		local adore = Common.createadornment(name, 0.1, pos, color)
+	end
+end
+
+--for debug purposes
+local function makearrow(name, pos: vector, dir: vector, color, length: number)
+	if workspace.Terrain:FindFirstChild(name) then
+		local adore: Part = workspace.Terrain[name]
+		local newdir = vector.normalize(dir) * length
+		local newpos = pos + newdir
+		local midpoint = (pos + newpos) / 2
+
+		adore.CFrame = CFrame.lookAt(Common.vectortovector3(midpoint), Common.vectortovector3(newpos))
+	else
+		local adore = Common.createarrow(name, pos, dir, color, length)
+	end
+end
+
 local function returnpoints(Wheels: { BasePart }): { Common.PrePoint }
 	local Points: { Common.PrePoint } = {}
 	local lastpos: vector? = nil
@@ -48,6 +72,7 @@ local function returnpoints(Wheels: { BasePart }): { Common.PrePoint }
 					wheel.Size.Z / 2,
 					Common.vector3tovector(rightvector)
 				)
+
 				Points[#Points + 1] = {
 					pos2,
 					Pos1,
@@ -95,6 +120,11 @@ function trackclass.new(track_settings: TypeDefinitions.TrackSettings)
 end
 
 function trackclass:Init(WheelParts: any)
+	if not workspace.Terrain:FindFirstChild("Tracks") then
+		local folder = Instance.new("Folder")
+		folder.Name = "Tracks"
+		folder.Parent = workspace.Terrain
+	end
 	for _, wheel in ipairs(WheelParts) do
 		if wheel:IsA("BasePart") then
 			if wheel.Name == "Main" then
@@ -113,7 +143,7 @@ function trackclass:Init(WheelParts: any)
 	for segment = 1, numberofparts do
 		local TrackPart = self.track_settings.TrackModel
 		TrackPart = TrackPart:Clone() :: Model
-		TrackPart.Parent = workspace.Terrain
+		TrackPart.Parent = workspace.Terrain.Tracks
 		TrackPart.Name = "trackpart_" .. tostring(segment)
 
 		for _, v in ipairs(TrackPart:GetDescendants()) do
@@ -128,7 +158,7 @@ function trackclass:Init(WheelParts: any)
 
 		if self.track_settings.MiddleTrack then
 			local MiddleTrack = self.track_settings.MiddleTrack:Clone()
-			MiddleTrack.Parent = workspace.Terrain
+			MiddleTrack.Parent = workspace.Terrain.Tracks
 			MiddleTrack.Name = "middletrack_" .. tostring(segment)
 			self.variables.MiddleTracks[TrackPart] = MiddleTrack
 			for _, v in ipairs(MiddleTrack:GetDescendants()) do
@@ -292,65 +322,69 @@ function trackclass:update(dt: number, parallel: boolean)
 			local Points = returnpoints(self.variables.Wheels)
 			local lengthtable, totallength = Common.getotallength(Points)
 			local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
-			local PartstoMake = math.clamp(numberofparts - #self.variables.Treads, 0, 50)
+			local difference = numberofparts - #self.variables.Treads
 			local speed = (self.Speed :: number * dt) / totallength
 			self.variables.offset = (self.variables.offset :: number + speed :: number) % 1
 
-			for _ = 1, PartstoMake do
-				local data = {
-					trackpart = "create",
-				}
-				table.insert(self.variables.Treads, data)
+			if difference >= 1 then
+				for _ = 1, difference do
+					local data = {
+						trackpart = "create",
+					}
+					table.insert(self.variables.Treads, data)
+				end
+			elseif difference <= -1 then
+				local partstodelete = math.abs(difference)
+				for _ = 1, partstodelete do
+					local tread = self.variables.Treads[#self.variables.Treads]
+					temp[tread.trackpart] = { "destroy", #self.variables.Treads } :: { string | number }
+					table.remove(self.variables.Treads, #self.variables.Treads)
+				end
 			end
 			for segment, tread: { trackpart: Model | string | BasePart } in ipairs(self.variables.Treads) do
-				if segment <= numberofparts then
-					local t1 = (((segment - 1) / numberofparts) + self.variables.offset) % 1
-					local t2 = ((segment / numberofparts) + self.variables.offset) % 1
+				local t1 = (((segment - 1) / numberofparts) + self.variables.offset) % 1
+				local t2 = ((segment / numberofparts) + self.variables.offset) % 1
 
-					local Pos1, Face = Common.lerpthroughpoints(t1, Points, lengthtable, totallength)
-					local Pos2 = Common.lerpthroughpoints(t2, Points, lengthtable, totallength)
-					local midpoint = (Pos1 + Pos2) / 2
-					local targetCF = CFrame.lookAt(midpoint, Pos2, Face)
-					if typeof(tread.trackpart) ~= "string" then
-						if self.variables.IsAModel then
-							local model = tread.trackpart :: any
-							table.insert(bulkmove.Parts, model.Main :: BasePart)
-						elseif typeof(tread.trackpart) == "string" and tread.trackpart == "create" then
-							local part = tread.trackpart :: BasePart
-							table.insert(bulkmove.Parts, part :: BasePart)
-						end
-
-						if self.track_settings.MiddleTrack then
-							local t3 = ((((segment + 1) % numberofparts) / numberofparts) + self.variables.offset) % 1
-							local Pos3, Face2 = Common.lerpthroughpoints(t3, Points, lengthtable, totallength)
-
-							local midpoint2 = (Pos2 + Pos3) / 2
-							local middlepoint = (midpoint + midpoint2) / 2
-
-							local middlecf = CFrame.lookAt(middlepoint, Pos3, Face2)
-							local middletrack = self.variables.MiddleTracks[tread.trackpart]
-
-							table.insert(bulkmove_middletread.Parts, middletrack.Main)
-							table.insert(bulkmove_middletread.CFrames, middlecf)
-						end
-					else
-						if not self.track_settings.MiddleTrack then
-							temp[tread.trackpart] = { targetCF, segment } :: { CFrame | number }
-						else
-							local t3 = ((((segment + 1) % numberofparts) / numberofparts) + self.variables.offset) % 1
-							local Pos3, Face2 = Common.lerpthroughpoints(t3, Points, lengthtable, totallength)
-
-							local midpoint2 = (Pos2 + Pos3) / 2
-							local middlepoint = (midpoint + midpoint2) / 2
-							temp[tread.trackpart] =
-								{ targetCF, segment, { middlepoint, Pos3, Face2 } } :: { CFrame | number | { Vector3 } }
-						end
+				local Pos1, Face = Common.lerpthroughpoints(t1, Points, lengthtable, totallength)
+				local Pos2 = Common.lerpthroughpoints(t2, Points, lengthtable, totallength)
+				local midpoint = (Pos1 + Pos2) / 2
+				local targetCF = CFrame.lookAt(midpoint, Pos2, Face)
+				if typeof(tread.trackpart) ~= "string" then
+					if self.variables.IsAModel then
+						local model = tread.trackpart :: any
+						table.insert(bulkmove.Parts, model.Main :: BasePart)
+					elseif typeof(tread.trackpart) == "string" and tread.trackpart == "create" then
+						local part = tread.trackpart :: BasePart
+						table.insert(bulkmove.Parts, part :: BasePart)
 					end
-					table.insert(bulkmove.CFrames, targetCF)
+
+					if self.track_settings.MiddleTrack then
+						local t3 = ((((segment + 1) % numberofparts) / numberofparts) + self.variables.offset) % 1
+						local Pos3, Face2 = Common.lerpthroughpoints(t3, Points, lengthtable, totallength)
+
+						local midpoint2 = (Pos2 + Pos3) / 2
+						local middlepoint = (midpoint + midpoint2) / 2
+
+						local middlecf = CFrame.lookAt(middlepoint, Pos3, Face2)
+						local middletrack = self.variables.MiddleTracks[tread.trackpart]
+
+						table.insert(bulkmove_middletread.Parts, middletrack.Main)
+						table.insert(bulkmove_middletread.CFrames, middlecf)
+					end
 				else
-					temp[tread.trackpart] = { "destroy", segment } :: { string | number }
-					table.remove(self.variables.Treads, segment)
+					if not self.track_settings.MiddleTrack then
+						temp[tread.trackpart] = { targetCF, segment } :: { CFrame | number }
+					else
+						local t3 = ((((segment + 1) % numberofparts) / numberofparts) + self.variables.offset) % 1
+						local Pos3, Face2 = Common.lerpthroughpoints(t3, Points, lengthtable, totallength)
+
+						local midpoint2 = (Pos2 + Pos3) / 2
+						local middlepoint = (midpoint + midpoint2) / 2
+						temp[tread.trackpart] =
+							{ targetCF, segment, { middlepoint, Pos3, Face2 } } :: { CFrame | number | { Vector3 } }
+					end
 				end
+				table.insert(bulkmove.CFrames, targetCF)
 			end
 		end
 	end
@@ -364,12 +398,12 @@ function trackclass:update(dt: number, parallel: boolean)
 				local middlecf = data[3] :: { Vector3 }
 
 				local TrackPart = self.track_settings.TrackModel:Clone() :: any
-				TrackPart.Parent = workspace.Terrain
+				TrackPart.Parent = workspace.Terrain.Tracks
 				TrackPart.Name = "trackpart_" .. tostring(segment)
 
 				if self.track_settings.MiddleTrack then
 					local MiddleTrack = self.track_settings.MiddleTrack:Clone()
-					MiddleTrack.Parent = workspace.Terrain
+					MiddleTrack.Parent = workspace.Terrain.Tracks
 					MiddleTrack.Name = "middletrack_" .. tostring(segment)
 					self.variables.MiddleTracks[TrackPart] = MiddleTrack
 					table.insert(bulkmove_middletread.Parts, MiddleTrack.Main :: BasePart)
