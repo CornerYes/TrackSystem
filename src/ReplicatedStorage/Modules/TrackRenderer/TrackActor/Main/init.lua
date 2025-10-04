@@ -29,74 +29,6 @@ local function makearrow(name, pos: vector, dir: vector, color, length: number)
 	end
 end
 
-local function returnpoints(Wheels: { BasePart }): { Common.PrePoint }
-	local Points: { Common.PrePoint } = {}
-	local lastpos: vector? = nil
-	for index, wheel in ipairs(Wheels) do
-		local nextindex = index + 1
-		if nextindex > #Wheels then
-			nextindex = 1
-		end
-
-		local nextwheel = Wheels[nextindex]
-		local Type = wheel.Name:split("_")
-		local nexttype = nextwheel.Name:split("_")
-		local rightvector = wheel.CFrame.RightVector
-
-		local Pos1, Pos2 = Common.getexternaltangentpoint(
-			Common.vector3tovector(wheel.Position),
-			wheel.Size.Z / 2,
-			Common.vector3tovector(nextwheel.Position),
-			nextwheel.Size.Z / 2,
-			Common.vector3tovector(rightvector)
-		)
-
-		if Type[2] then
-			if lastpos then
-				Points[#Points + 1] = {
-					lastpos,
-					Pos1,
-					wheel,
-				} :: Common.PrePoint
-				lastpos = Pos2
-			else
-				local lastindex = index - 1
-				if lastindex < 1 then
-					lastindex = #Wheels
-				end
-				local lastwheel = Wheels[lastindex]
-				local _, pos2 = Common.getexternaltangentpoint(
-					Common.vector3tovector(lastwheel.Position),
-					lastwheel.Size.Z / 2,
-					Common.vector3tovector(wheel.Position),
-					wheel.Size.Z / 2,
-					Common.vector3tovector(rightvector)
-				)
-
-				Points[#Points + 1] = {
-					pos2,
-					Pos1,
-					wheel,
-				} :: Common.PrePoint
-			end
-		end
-
-		if not nexttype[2] then
-			table.insert(Points, { Pos2, wheel } :: Common.PrePoint)
-		end
-		if index == #Wheels then
-			local firstpoint = Points[1]
-			if #firstpoint > 2 then
-				table.insert(Points, { firstpoint[1], firstpoint[3] })
-			else
-				table.insert(Points, { firstpoint[1], firstpoint[2] })
-			end
-		end
-		lastpos = Pos2
-	end
-	return Points
-end
-
 function trackclass.new(track_settings: TypeDefinitions.TrackSettings)
 	local object = {
 		IsActive = false,
@@ -146,7 +78,7 @@ function trackclass:Init(WheelParts: any)
 		error("missing: Main: BasePart")
 	end
 
-	local Points = returnpoints(self.variables.Wheels)
+	local Points = Common.returnpoints(self.variables.Wheels)
 	local _, totallength = Common.getotallength(Points)
 	local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
 
@@ -329,13 +261,12 @@ function trackclass:update(dt: number, parallel: boolean)
 		end
 
 		if not self.variables.LodActivated then
-			local Points = returnpoints(self.variables.Wheels)
+			local Points = Common.returnpoints(self.variables.Wheels)
 			local lengthtable, totallength = Common.getotallength(Points)
 			local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
 			local difference = numberofparts - #self.variables.Treads
 			local speed = (self.Speed :: number * dt) / totallength
 			self.variables.offset = (self.variables.offset :: number + speed :: number) % 1
-
 			if difference >= 1 then
 				for _ = 1, difference do
 					local data = {
@@ -356,8 +287,9 @@ function trackclass:update(dt: number, parallel: boolean)
 				local t1 = (((segment - 1) / numberofparts) + self.variables.offset) % 1
 				local t2 = ((segment / numberofparts) + self.variables.offset) % 1
 
-				local Pos1, Face = Common.lerpthroughpoints(t1, Points, lengthtable, totallength)
-				local Pos2 = Common.lerpthroughpoints(t2, Points, lengthtable, totallength)
+				local Pos1, Face = Common.lerpthroughpoints(t1, lengthtable, totallength)
+				local Pos2 = Common.lerpthroughpoints(t2, lengthtable, totallength)
+
 				local midpoint = (Pos1 + Pos2) / 2
 				local targetCF = CFrame.lookAt(midpoint, Pos2, Face)
 				if typeof(tread.trackpart) ~= "string" then
@@ -371,7 +303,7 @@ function trackclass:update(dt: number, parallel: boolean)
 
 					if self.track_settings.MiddleTrack then
 						local t3 = ((((segment + 1) % numberofparts) / numberofparts) + self.variables.offset) % 1
-						local Pos3, Face2 = Common.lerpthroughpoints(t3, Points, lengthtable, totallength)
+						local Pos3, Face2 = Common.lerpthroughpoints(t3, lengthtable, totallength)
 
 						local midpoint2 = (Pos2 + Pos3) / 2
 						local middlepoint = (midpoint + midpoint2) / 2
@@ -384,10 +316,10 @@ function trackclass:update(dt: number, parallel: boolean)
 					end
 				else
 					if not self.track_settings.MiddleTrack then
-						temp[tread.trackpart] = { targetCF, segment } :: { CFrame | number }
+						table.insert(temp, { targetCF, segment }:: { CFrame | number })
 					else
 						local t3 = ((((segment + 1) % numberofparts) / numberofparts) + self.variables.offset) % 1
-						local Pos3, Face2 = Common.lerpthroughpoints(t3, Points, lengthtable, totallength)
+						local Pos3, Face2 = Common.lerpthroughpoints(t3, lengthtable, totallength)
 
 						local midpoint2 = (Pos2 + Pos3) / 2
 						local middlepoint = (midpoint + midpoint2) / 2
@@ -399,9 +331,11 @@ function trackclass:update(dt: number, parallel: boolean)
 			end
 		end
 	end
+
 	if parallel then
 		task.synchronize()
 	end
+	print(temp)
 	for value, data in pairs(temp) do
 		if typeof(data) == "table" then
 			if typeof(data[1]) == "CFrame" then
@@ -447,6 +381,7 @@ function trackclass:update(dt: number, parallel: boolean)
 			value.Transparency = data
 		end
 	end
+
 	if #bulkmove.CFrames == #bulkmove.Parts then
 		workspace:BulkMoveTo(bulkmove.Parts, bulkmove.CFrames, Enum.BulkMoveMode.FireCFrameChanged)
 	end

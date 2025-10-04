@@ -99,15 +99,87 @@ function module.vectortovector3(v: vector): Vector3
 	return Vector3.new(v.x, v.y, v.z)
 end
 
+function module.returnpoints(Wheels: { BasePart }): { PrePoint }
+	local Points: { PrePoint } = {}
+	local lastpos: vector? = nil
+	for index, wheel in ipairs(Wheels) do
+		local nextindex = index + 1
+		if nextindex > #Wheels then
+			nextindex = 1
+		end
+
+		local nextwheel = Wheels[nextindex]
+		local Type = wheel.Name:split("_")
+		local nexttype = nextwheel.Name:split("_")
+		local rightvector = wheel.CFrame.RightVector
+
+		local Pos1, Pos2 = module.getexternaltangentpoint(
+			module.vector3tovector(wheel.Position),
+			wheel.Size.Z / 2,
+			module.vector3tovector(nextwheel.Position),
+			nextwheel.Size.Z / 2,
+			module.vector3tovector(rightvector)
+		)
+
+		if Type[2] then
+			if lastpos then
+				Points[#Points + 1] = {
+					lastpos,
+					Pos1,
+					wheel,
+					nextwheel,
+				} :: PrePoint
+				lastpos = Pos2
+			else
+				local lastindex = index - 1
+				if lastindex < 1 then
+					lastindex = #Wheels
+				end
+				local lastwheel = Wheels[lastindex]
+				local _, pos2 = module.getexternaltangentpoint(
+					module.vector3tovector(lastwheel.Position),
+					lastwheel.Size.Z / 2,
+					module.vector3tovector(wheel.Position),
+					wheel.Size.Z / 2,
+					module.vector3tovector(rightvector)
+				)
+
+				Points[#Points + 1] = {
+					pos2,
+					Pos1,
+					wheel,
+					lastwheel,
+				} :: PrePoint
+			end
+		end
+
+		if not nexttype[2] then
+			table.insert(Points, { Pos2, wheel } :: PrePoint)
+		end
+		if index == #Wheels then
+			local firstpoint = Points[1]
+			if #firstpoint > 2 then
+				table.insert(Points, { firstpoint[1], firstpoint[3] })
+			else
+				table.insert(Points, { firstpoint[1], firstpoint[2] })
+			end
+		end
+		lastpos = Pos2
+	end
+	return Points
+end
+
 function module.createcirculararc(center: vector, point1: vector, point2: vector, radius: number, lookVector: vector, t): vector
 	lookVector = lookVector * -1
 	local v1 = vector.normalize(point1 - center)
 	local v2 = vector.normalize(point2 - center)
 	local angle = -math.acos(vector.dot(v1, v2))
 	local cross = vector.cross(v1, v2)
+	
 	if vector.dot(cross, lookVector) < 0 then
 		angle = -angle
 	end
+
 	local theta = angle * t
 	local rotatedPoint = center + (v1 * radius * math.cos(theta)) + (vector.cross(v1, lookVector) * radius * math.sin(theta))
 	return rotatedPoint
@@ -124,7 +196,7 @@ function getlength(a: Vector3, b: Vector3, c: BasePart): ( Point, number)
 	return data, len
 end
 
-function module.getotallength(points: {Vector3 | PrePoint }): ({ Point }, number)
+function module.getotallength(points: {PrePoint}): ({ Point }, number)
     local legnthtable = {}
     local totallength = 0
 
@@ -135,17 +207,21 @@ function module.getotallength(points: {Vector3 | PrePoint }): ({ Point }, number
 			local p1: Vector3 = currentPoint[1] :: Vector3
 			local p2: Vector3 = currentPoint[2] :: Vector3
 			local wheel: BasePart = currentPoint[3] :: BasePart
+			local nextwheel: BasePart = currentPoint[4] :: BasePart
 			local raidus = wheel.Size.Z / 2
+
 			local v1 = vector.normalize(module.vector3tovector(p1) - module.vector3tovector(wheel.Position))
 			local v2 = vector.normalize(module.vector3tovector(p2) - module.vector3tovector(wheel.Position))
 
 			local angle = math.acos(vector.dot(v1, v2))
 			local arcLength = angle * raidus
+
 			local arcdata = {
 				arcLength,
 				true,
-				{wheel, p1, p2} :: {BasePart | Vector3},
+				{wheel, p1, p2, nextwheel} :: {BasePart | Vector3},
 			} :: Point
+
 			totallength += arcLength
 			table.insert(legnthtable, arcdata)
 
@@ -174,7 +250,7 @@ function module.getotallength(points: {Vector3 | PrePoint }): ({ Point }, number
     return legnthtable, totallength
 end
 
-function module.lerpthroughpoints(t: number, points: {Vector3 | PrePoint}, legnthtable : {Point}, totallength: number): (Vector3, Vector3)
+function module.lerpthroughpoints(t: number, legnthtable : {Point}, totallength: number): (Vector3, Vector3)
     local target = t * totallength
 
     local distance = 0
@@ -188,6 +264,8 @@ function module.lerpthroughpoints(t: number, points: {Vector3 | PrePoint}, legnt
 				local p1 = pointdata[2] :: Vector3
 				local p2 = pointdata[3] :: Vector3
 				local wheel = pointdata[1] :: BasePart
+				local nextwheel = pointdata[4] :: BasePart
+
 				local radius = wheel.Size.Z / 2	
 				local arcPoint = module.createcirculararc(
 					module.vector3tovector(wheel.Position),
@@ -197,6 +275,7 @@ function module.lerpthroughpoints(t: number, points: {Vector3 | PrePoint}, legnt
 					module.vector3tovector(wheel.CFrame.RightVector),
 					segmentT
 				)
+				
 				return module.vectortovector3(arcPoint), wheel.CFrame.RightVector
 			else
 				local p1 = pointdata[1] :: Vector3
@@ -207,7 +286,12 @@ function module.lerpthroughpoints(t: number, points: {Vector3 | PrePoint}, legnt
         end
         distance += length
     end
-    return points[#points] :: Vector3, Vector3.zero
+	
+	warn("t value out of range, returning last point")
+	local defaultpoint = legnthtable[#legnthtable]
+	local lastpoint = defaultpoint[3] :: {BasePart | Vector3}
+
+    return  lastpoint :: Vector3, Vector3.zero
 end
 
 return module

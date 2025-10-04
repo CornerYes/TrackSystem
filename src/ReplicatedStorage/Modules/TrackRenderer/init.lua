@@ -1,5 +1,5 @@
 --!strict
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local version = "1.0.1"
 local OrigActor = script.TrackActor
 
 local TypeDef = require(OrigActor.Main.TypeDefinitions)
@@ -109,7 +109,7 @@ function module:Destroy()
 end
 
 function module.version()
-	return "1.0.0"
+	return version
 end
 
 return module
