@@ -1,5 +1,5 @@
 --!strict
-local version = "1.0.1"
+local version = "1.0.2"
 local OrigActor = script.TrackActor
 
 local TypeDef = require(OrigActor.Main.TypeDefinitions)
