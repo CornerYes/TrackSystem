@@ -268,10 +268,6 @@ function trackclass:update(dt: number, parallel: boolean)
 				local Pos1, Face = Common.lerpthroughpoints(t1, lengthtable, totallength)
 				local Pos2 = Common.lerpthroughpoints(t2, lengthtable, totallength)
 
-				if Pos1.Magnitude == 0 or Pos2.Magnitude == 0 then
-					continue
-				end
-
 				local midpoint = (Pos1 + Pos2) / 2
 				local targetCF = CFrame.lookAt(midpoint, Pos2, Face)
 				if typeof(tread.trackpart) ~= "string" then

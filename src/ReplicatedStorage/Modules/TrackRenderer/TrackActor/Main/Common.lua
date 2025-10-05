@@ -293,7 +293,7 @@ function module.lerpthroughpoints(t: number, lengthtable : {Point}, totallength:
 				local nextwheel = pointdata[4] :: BasePart
 
 				local radius = wheel.Size.Z / 2	
-				local nextwheelradius = nextwheel.Size.Z / 2
+				--local nextwheelradius = nextwheel.Size.Z / 2
 
 				local arcPoint = module.createcirculararc(
 					module.vector3tovector(wheel.Position),
