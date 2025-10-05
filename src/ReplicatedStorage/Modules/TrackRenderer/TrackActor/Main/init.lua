@@ -5,30 +5,6 @@ local Camera = workspace.CurrentCamera
 local Common = require(script.Common)
 local TypeDefinitions = require(script.TypeDefinitions)
 
---for debug purposes
-local function make(name, pos, color)
-	if workspace.Terrain:FindFirstChild(name) then
-		local adore: SphereHandleAdornment = workspace.Terrain[name]
-		adore.CFrame = pos
-	else
-		local adore = Common.createadornment(name, 0.1, pos, color)
-	end
-end
-
---for debug purposes
-local function makearrow(name, pos: vector, dir: vector, color, length: number)
-	if workspace.Terrain:FindFirstChild(name) then
-		local adore: Part = workspace.Terrain[name]
-		local newdir = vector.normalize(dir) * length
-		local newpos = pos + newdir
-		local midpoint = (pos + newpos) / 2
-
-		adore.CFrame = CFrame.lookAt(Common.vectortovector3(midpoint), Common.vectortovector3(newpos))
-	else
-		local adore = Common.createarrow(name, pos, dir, color, length)
-	end
-end
-
 function trackclass.new(track_settings: TypeDefinitions.TrackSettings)
 	local object = {
 		IsActive = false,
@@ -263,10 +239,12 @@ function trackclass:update(dt: number, parallel: boolean)
 		if not self.variables.LodActivated then
 			local Points = Common.returnpoints(self.variables.Wheels)
 			local lengthtable, totallength = Common.getotallength(Points)
+
 			local numberofparts = math.ceil(totallength / self.track_settings.TrackLength)
 			local difference = numberofparts - #self.variables.Treads
 			local speed = (self.Speed :: number * dt) / totallength
 			self.variables.offset = (self.variables.offset :: number + speed :: number) % 1
+
 			if difference >= 1 then
 				for _ = 1, difference do
 					local data = {
@@ -282,13 +260,17 @@ function trackclass:update(dt: number, parallel: boolean)
 					table.remove(self.variables.Treads, #self.variables.Treads)
 				end
 			end
-			
+
 			for segment, tread: { trackpart: Model | string | BasePart } in ipairs(self.variables.Treads) do
 				local t1 = (((segment - 1) / numberofparts) + self.variables.offset) % 1
 				local t2 = ((segment / numberofparts) + self.variables.offset) % 1
 
 				local Pos1, Face = Common.lerpthroughpoints(t1, lengthtable, totallength)
 				local Pos2 = Common.lerpthroughpoints(t2, lengthtable, totallength)
+
+				if Pos1.Magnitude == 0 or Pos2.Magnitude == 0 then
+					continue
+				end
 
 				local midpoint = (Pos1 + Pos2) / 2
 				local targetCF = CFrame.lookAt(midpoint, Pos2, Face)

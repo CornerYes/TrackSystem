@@ -1,7 +1,7 @@
 local module = {}
 
 export type Point = {
-	number | boolean | {BasePart? | Vector3}?
+	number | boolean | {BasePart? | vector}?
 }
 
 export type PrePoint = {
@@ -25,6 +25,28 @@ function module.getvectorintersection(pos1, d1, pos2, d2, over): vector?
 	local t = vector.magnitude(vector.cross(p1p2, d2)) / vector.magnitude(cross)
 	local intersection = pos1 + d1 * t
 	return intersection
+end
+
+function module.debugsphere(name, pos, color, radius)
+	if workspace.Terrain.Adorments:FindFirstChild(name) then
+		local adore: SphereHandleAdornment = workspace.Terrain.Adorments[name]
+		adore.CFrame = pos
+	else
+		module.createadornment(name, radius, pos, color)
+	end
+end
+
+function module.debugarrow(name, pos: vector, dir: vector, color, length: number)
+	if workspace.Terrain.Adorments:FindFirstChild(name) then
+		local adore: Part = workspace.Terrain.Adorments[name]
+		local newdir = vector.normalize(dir) * length
+		local newpos = pos + newdir
+		local midpoint = (pos + newpos) / 2
+
+		adore.CFrame = CFrame.lookAt(module.vectortovector3(midpoint), module.vectortovector3(newpos))
+	else
+		module.createarrow(name, pos, dir, color, length)
+	end
 end
 
 function module.createpart()
@@ -70,7 +92,7 @@ function module.createadornment(name: string, raidus: number, CF: CFrame, color:
 	SphereAdornment.Name = name
 	SphereAdornment.Radius = raidus
 	SphereAdornment.Adornee = workspace.Terrain
-	SphereAdornment.Parent = workspace.Terrain
+	SphereAdornment.Parent = workspace.Terrain.Adorments
 	SphereAdornment.CFrame = CF
 	SphereAdornment.Color3 = color
 	SphereAdornment.ZIndex = 1
@@ -87,7 +109,7 @@ function module.createarrow(name: string, pos, dir, color: Color3, length): Base
 	part.Color = color
 	part.Anchored = true
 	part.CanCollide = false
-	part.Parent = workspace.Terrain
+	part.Parent = workspace.Terrain.Adorments
 	return part
 end
 
@@ -185,8 +207,8 @@ function module.createcirculararc(center: vector, point1: vector, point2: vector
 	return rotatedPoint
 end
 
-function getlength(a: Vector3, b: Vector3, c: BasePart): ( Point, number)
-	local len = (b - a).Magnitude
+function getlength(a: vector, b: vector, c: BasePart): ( Point, number)
+	local len = vector.magnitude(b - a)
 	local data = {
 		len,
 		false,
@@ -204,14 +226,14 @@ function module.getotallength(points: {PrePoint}): ({ Point }, number)
 		local currentPoint = points[i]
 		local nextpoint = points[i + 1]
 		if #currentPoint > 2 then
-			local p1: Vector3 = currentPoint[1] :: Vector3
-			local p2: Vector3 = currentPoint[2] :: Vector3
+			local p1: vector = currentPoint[1] :: vector
+			local p2: vector = currentPoint[2] :: vector
 			local wheel: BasePart = currentPoint[3] :: BasePart
 			local nextwheel: BasePart = currentPoint[4] :: BasePart
 			local raidus = wheel.Size.Z / 2
 
-			local v1 = vector.normalize(module.vector3tovector(p1) - module.vector3tovector(wheel.Position))
-			local v2 = vector.normalize(module.vector3tovector(p2) - module.vector3tovector(wheel.Position))
+			local v1 = vector.normalize(p1 - module.vector3tovector(wheel.Position))
+			local v2 = vector.normalize(p2 - module.vector3tovector(wheel.Position))
 
 			local angle = math.acos(vector.dot(v1, v2))
 			local arcLength = angle * raidus
@@ -219,14 +241,18 @@ function module.getotallength(points: {PrePoint}): ({ Point }, number)
 			local arcdata = {
 				arcLength,
 				true,
-				{wheel, p1, p2, nextwheel} :: {BasePart | Vector3},
+				{wheel, p1, p2, nextwheel} :: {BasePart | vector},
 			} :: Point
+
+			if arcLength ~= arcLength then
+				arcLength = 0
+			end
 
 			totallength += arcLength
 			table.insert(legnthtable, arcdata)
 
 			if #nextpoint > 2 then
-				local data, len = getlength(p2, nextpoint[1] :: Vector3, nextpoint[3])
+				local data, len = getlength(p2, nextpoint[1] :: vector, nextpoint[3])
 				table.insert(legnthtable, data)
         		totallength += len
 			else
@@ -236,7 +262,7 @@ function module.getotallength(points: {PrePoint}): ({ Point }, number)
 			end
 		else
 			if #nextpoint > 2 then
-				local data, len = getlength(currentPoint[1], nextpoint[1] :: Vector3, nextpoint[3])
+				local data, len = getlength(currentPoint[1], nextpoint[1] :: vector, nextpoint[3])
 				table.insert(legnthtable, data)
         		totallength += len
 			else
@@ -250,28 +276,29 @@ function module.getotallength(points: {PrePoint}): ({ Point }, number)
     return legnthtable, totallength
 end
 
-function module.lerpthroughpoints(t: number, legnthtable : {Point}, totallength: number): (Vector3, Vector3)
+function module.lerpthroughpoints(t: number, lengthtable : {Point}, totallength: number): (Vector3, Vector3)
     local target = t * totallength
 
     local distance = 0
-    for i = 1, #legnthtable do
-        local length = legnthtable[i][1] :: number
-		local isacurve = legnthtable[i][2] :: boolean
-		local pointdata = legnthtable[i][3] :: {BasePart | Vector3}
+    for i = 1, #lengthtable do
+        local length = lengthtable[i][1] :: number
+		local isacurve = lengthtable[i][2] :: boolean
+		local pointdata = lengthtable[i][3] :: {BasePart | vector}
         if distance + length >= target then
 			local segmentT = (target - distance) / length
 			if isacurve then
-				local p1 = pointdata[2] :: Vector3
-				local p2 = pointdata[3] :: Vector3
+				local p1 = pointdata[2] :: vector
+				local p2 = pointdata[3] :: vector
 				local wheel = pointdata[1] :: BasePart
 				local nextwheel = pointdata[4] :: BasePart
 
 				local radius = wheel.Size.Z / 2	
 				local nextwheelradius = nextwheel.Size.Z / 2
+
 				local arcPoint = module.createcirculararc(
 					module.vector3tovector(wheel.Position),
-					module.vector3tovector(p1),
-					module.vector3tovector(p2),
+					p1,
+					p2,
 					radius,
 					module.vector3tovector(wheel.CFrame.RightVector),
 					segmentT
@@ -279,20 +306,16 @@ function module.lerpthroughpoints(t: number, legnthtable : {Point}, totallength:
 				
 				return module.vectortovector3(arcPoint), wheel.CFrame.RightVector
 			else
-				local p1 = pointdata[1] :: Vector3
-				local p2 = pointdata[2] :: Vector3
+				local p1 = pointdata[1] :: vector
+				local p2 = pointdata[2] :: vector
 				local wheel = pointdata[3] :: BasePart
-				return p1:Lerp(p2 :: Vector3, segmentT), wheel.CFrame.RightVector
+				return p1:Lerp(p2 :: vector, segmentT), wheel.CFrame.RightVector
 			end
         end
         distance += length
     end
 	
-	warn("t value out of range, returning last point")
-	local defaultpoint = legnthtable[#legnthtable]
-	local lastpoint = defaultpoint[3] :: {BasePart | Vector3}
-
-    return  lastpoint :: Vector3, Vector3.zero
+    return  Vector3.zero, Vector3.zero
 end
 
 return module
