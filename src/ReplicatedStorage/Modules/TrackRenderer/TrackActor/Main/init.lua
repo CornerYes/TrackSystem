@@ -335,7 +335,6 @@ function trackclass:update(dt: number, parallel: boolean)
 	if parallel then
 		task.synchronize()
 	end
-	print(temp)
 	for value, data in pairs(temp) do
 		if typeof(data) == "table" then
 			if typeof(data[1]) == "CFrame" then

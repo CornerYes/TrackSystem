@@ -169,7 +169,7 @@ function module.returnpoints(Wheels: { BasePart }): { PrePoint }
 	return Points
 end
 
-function module.createcirculararc(center: vector, point1: vector, point2: vector, radius: number, lookVector: vector, t): vector
+function module.createcirculararc(center: vector, point1: vector, point2: vector, radius: number, lookVector: vector, t, longway: boolean?): vector
 	lookVector = lookVector * -1
 	local v1 = vector.normalize(point1 - center)
 	local v2 = vector.normalize(point2 - center)
@@ -267,6 +267,7 @@ function module.lerpthroughpoints(t: number, legnthtable : {Point}, totallength:
 				local nextwheel = pointdata[4] :: BasePart
 
 				local radius = wheel.Size.Z / 2	
+				local nextwheelradius = nextwheel.Size.Z / 2
 				local arcPoint = module.createcirculararc(
 					module.vector3tovector(wheel.Position),
 					module.vector3tovector(p1),
